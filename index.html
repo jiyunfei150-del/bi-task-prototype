@@ -5,7 +5,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
 <style>
 /* 设计计划：沿用产品外壳（深靛顶栏 + 白色左菜单 + 页签），中性色偏靛蓝；强调色靛蓝 #3b4cd4，数据色蓝/青/橙/紫；
-   字体 Inter + Noto Sans SC，代码 JetBrains Mono；圆角 8~16 分层；智能问数默认输入框居中，选「定时任务」技能开问后对话收到左栏，右侧大面积放预期效果 */
+   字体 Inter + Noto Sans SC，代码 JetBrains Mono；圆角 8~16 分层；智能问数默认输入框居中，点「产出 · 定时任务」开问后对话收到左栏，右侧大面积放预期效果 */
 :root{
   --bg:#f2f4f9; --surface:#ffffff; --sunk:#f6f7fb; --line:#e2e5ef; --line-2:#edeff5;
   --ink:#151a2d; --ink-2:#454c66; --mute:#767d95; --faint:#a6abbf;
@@ -527,7 +527,7 @@ pre.sql{margin:0;background:var(--sunk);border:1px solid var(--line);border-radi
             </div>
             <div class="thread" id="thread"><div class="thread-in" id="threadIn"></div></div>
             <div class="composer"><div class="composer-in">
-              <div class="herotop"><h1>今天想看哪些数据？</h1><p>直接提问；想让数据按时发到飞书，或者帮你盯着指标，在「技能」里选「定时任务」。</p></div>
+              <div class="herotop"><h1>今天想看哪些数据？</h1><p>直接提问；想让数据按时发到飞书，或者帮你盯着指标，点输入框下方「产出」里的「定时任务」。</p></div>
               <div class="box">
                 <textarea id="q" rows="2" placeholder="请输入你的问题，回车发送，Shift+回车换行"></textarea>
                 <div class="boxbar">
@@ -536,12 +536,12 @@ pre.sql{margin:0;background:var(--sunk);border:1px solid var(--line);border-radi
                   <div class="skillwrap">
                     <button class="pill" id="skillBtn" type="button">✦ 选择技能</button>
                     <div class="skillmenu" id="skillMenu" hidden>
-                      <button type="button" data-skill="task"><span class="si"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6"/></svg></span><b>定时任务 <span class="nb">新</span></b><span class="d">按时把数据发到飞书，或者盯着指标</span></button>
-                      <button type="button" data-skill="doc"><span class="si"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/></svg></span><b>飞书文档</b><span class="d">把分析结论整理成文档</span></button>
                       <button type="button" data-skill="attr"><span class="si"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M4 19h16M7 15l4-5 3 3 5-7"/></svg></span><b>归因分析</b><span class="d">指标变了，拆开看是哪里变的</span></button>
+                      <button type="button" data-skill="ret"><span class="si"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M4 5h16M6 10h12M8 15h8M10 20h4"/></svg></span><b>留存分析</b><span class="d">新用户第 1/7/30 天还剩多少</span></button>
+                      <button type="button" data-skill="cmp"><span class="si"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M7 20V9M12 20V4M17 20v-7"/></svg></span><b>对比分析</b><span class="d">两段时间、两个渠道放一起比</span></button>
                     </div>
                   </div>
-                  <span class="pill on" id="skillChip" hidden><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2"/></svg>定时任务<button class="x" id="skillOff" type="button" aria-label="取消定时任务技能">×</button></span>
+                  <span class="pill on" id="skillChip" hidden><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2"/></svg>定时任务<button class="x" id="skillOff" type="button" aria-label="取消定时任务">×</button></span>
                   <button class="send" id="send" type="button" aria-label="发送"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg></button>
                 </div>
               </div>
@@ -987,11 +987,11 @@ const STARTERS=[
 $('#starters').innerHTML=STARTERS.map((s,i)=>`<button class="starter" type="button" data-start="${i}"><b>${s.ic}${s.t}</b><span>${s.d}</span></button>`).join('');
 $('#starters').addEventListener('click',e=>{const b=e.target.closest('[data-start]');if(!b)return;setSkill(true);$('#q').value=STARTERS[+b.dataset.start].fill();autoGrow();$('#q').focus();});
 let skillOn=false;
-function setSkill(on){skillOn=on;$('#skillChip').hidden=!on;$('#skillBtn').hidden=on;$('#outTask').classList.toggle('on',on);$('#skillMenu').hidden=true;
+function setSkill(on){skillOn=on;$('#skillChip').hidden=!on;$('#outTask').classList.toggle('on',on);$('#skillMenu').hidden=true;
   $('#q').placeholder=on?'贴 SQL 或说要看什么，再说什么时候发。例如：每天 9 点发到运营群':'请输入你的问题，回车发送，Shift+回车换行';}
 $('#skillBtn').onclick=e=>{e.stopPropagation();$('#skillMenu').hidden=!$('#skillMenu').hidden;};
 $('#skillMenu').addEventListener('click',e=>{const b=e.target.closest('[data-skill]');if(!b)return;
-  if(b.dataset.skill==='task'){setSkill(true);$('#q').focus();}else{$('#skillMenu').hidden=true;toast('原型里只做了「定时任务」技能');}});
+  $('#skillMenu').hidden=true;toast('原型里只接了「定时任务」这条线，技能先不展开');});
 document.addEventListener('click',e=>{if(!e.target.closest('.skillwrap'))$('#skillMenu').hidden=true;if(!e.target.closest('#hist,#btnHist'))$('#hist').hidden=true;});
 $('#skillOff').onclick=()=>setSkill(false);
 $('#outTask').onclick=()=>{setSkill(!skillOn);if(skillOn)$('#q').focus();};
@@ -1022,8 +1022,8 @@ function send(){
   $('#q').value='';autoGrow();
   if(flow>0){followUp(raw);return;}
   const isTask=skillOn||/定时|每天|每日|每周|工作日|每小时|每月|发我|发到|推送|订阅|提醒|监控|告警/.test(raw)||/\bselect\b[\s\S]*\bfrom\b/i.test(raw);
-  if(!isTask){setHero(false);addU(esc(raw));later(()=>addA('原型里只接了定时任务这条线。在「技能」里选「定时任务」，或者直接说“每天 9 点发我”。'),400);return;}
-  if(!skillOn){setSkill(true);toast('识别到你要建定时任务，已自动选上「定时任务」技能');}
+  if(!isTask){setHero(false);addU(esc(raw));later(()=>addA('原型里只接了定时任务这条线。点下方「产出」里的「定时任务」，或者直接说“每天 9 点发我”。'),400);return;}
+  if(!skillOn){setSkill(true);toast('识别到你要建定时任务，已自动打开「产出 · 定时任务」');}
   startFlow(raw);}
 function startFlow(raw){
   flow=1;const {sql,rest}=splitSQL(raw);const f=parseFreq(rest);
@@ -1236,8 +1236,8 @@ async function ghostDrag(srcSel,dstSel,label,tk){
 function resetAll(){closeSql();closeMD();closePop();page='';goPage('chat');newChat();PROJECT=PROJS[0];$('#projTop').textContent=PROJECT+' ▾';$('#projPill').textContent='▤ '+PROJECT;
   TASKS=clone(TASKS0);tkType='all';paintTkType();$('#tkProj').value=PROJECT;$('#tkSearch').value='';$('#mergeNote').hidden=false;renderTasks();cleanupDemo();}
 const STEPS=[
- {t:'问数默认居中',d:'没开始问之前，输入框在页面中间。先在「技能」里选上「定时任务」。',run:async tk=>{
-   await wait(700,tk);await tap('#skillBtn',tk);await wait(500,tk);await tap('#skillMenu [data-skill="task"]',tk);await wait(800,tk);}},
+ {t:'问数默认居中',d:'没开始问之前，输入框在页面中间。先点输入框下方「产出」里的「定时任务」，输入框里会出现定时任务标签。',run:async tk=>{
+   await wait(700,tk);await tap('#outTask',tk);await wait(800,tk);}},
  {t:'贴一段 SQL，说什么时候发',d:'直接粘贴 SQL，再补一句“每天 9 点发到运营群”。SQL、时间和接收群都会被识别出来。',run:async tk=>{
    const q=await moveTo('#q',tk);ripple();q.focus({preventScroll:true});q.value=SQL_PASTE+'\n';autoGrow();await wait(700,tk);
    await typeIn('#q','帮我建个定时任务，每天9点发到运营群',tk,true);await tap('#send',tk);await wait(500,tk);}},
