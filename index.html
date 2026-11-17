@@ -305,6 +305,13 @@ table.f-t{width:100%;border-collapse:collapse;font-size:12px}
 .f-t th{color:var(--mute);font-weight:500;text-align:right;padding:4px 6px;border-bottom:1px solid var(--line)}
 .f-t td{text-align:right;padding:4px 6px;border-bottom:1px solid var(--line-2)}
 .f-t th:first-child,.f-t td:first-child{text-align:left}
+.f-t tr.tot td{font-weight:600;border-top:1px solid var(--line);border-bottom:0}
+.f-t td.dn{color:var(--down);font-weight:600}
+.f-more{font-size:11px;color:var(--mute)}
+.ws-load{display:flex;align-items:center;justify-content:center;gap:10px;min-height:320px;color:var(--mute);font-size:13px}
+.ws-load .spin{width:16px;height:16px;border:2px solid var(--line);border-top-color:var(--acc);border-radius:50%;animation:wsspin .8s linear infinite}
+@keyframes wsspin{to{transform:rotate(360deg)}}
+.f-sec{display:grid;gap:4px}
 .f-ai{font-size:12.5px;color:var(--ink-2)}
 .f-ai b{color:var(--ink)}
 .f-q{font-size:12.5px;background:var(--vio-soft);color:var(--vio);border-radius:8px;padding:7px 10px}
@@ -847,12 +854,17 @@ function cardHTML(d){
     const concl=`<div><b>DAU 52,310，比前天少 12.4%</b>，降幅主要在华为渠道。</div>`;
     const worst=CH.slice().sort((a,b)=>chg(a)-chg(b));
     const rows=list=>list.map(x=>`<tr><td>${x.n}</td><td class="num">${fmt(x.dau)}</td><td class="num ${chg(x)<-10?'dn':''}">${chg(x).toFixed(1)}%</td></tr>`).join('');
-    if(d.style==='brief')body=concl+ai;
-    else if(d.style==='table')body=concl+`<table class="f-t"><thead><tr><th>渠道</th><th>昨天</th><th>比前天</th></tr></thead><tbody>${rows(CH)}</tbody></table>`+ai;
+    const pv=`<div class="f-sec"><div class="f-cap">${d.source==='sql'?'SQL 结果 · 按渠道看最近两天':'分渠道 DAU'}</div><table class="f-t"><thead><tr><th>渠道</th><th>11-15</th><th>11-16</th><th>比前天</th></tr></thead><tbody>${CH.map(x=>`<tr><td>${x.n}</td><td class="num">${fmt(x.prev)}</td><td class="num">${fmt(x.dau)}</td><td class="num ${chg(x)<-10?'dn':''}">${chg(x).toFixed(1)}%</td></tr>`).join('')}<tr class="tot"><td>合计</td><td class="num">59,720</td><td class="num">52,310</td><td class="num dn">-12.4%</td></tr></tbody></table>${d.source==='sql'?'<div class="f-more">共 84 行（14 天 × 6 个渠道），点「打开」看全部</div>':''}</div>`;
+    const top3=`<div class="f-sec"><div class="f-cap">跌得最多的渠道</div><table class="f-t"><thead><tr><th>渠道</th><th>昨天</th><th>比前天</th></tr></thead><tbody>${rows(worst.slice(0,3))}</tbody></table></div>`;
+    if(d.type==='smart')body=chartB+(d.ai?`<div class="f-ai"><b>解读</b>　华为渠道昨天少了 5,820 人，占降幅 78.5%，集中在低端机型；${(d.mm||[]).includes('rate')?'付费率没受影响。':'其他渠道都在正常波动内。'}</div>`:'');
+    else if(d.type==='rule'&&tone==='red')body=top3+chartB+(d.ai?`<div class="f-ai"><b>解读</b>　华为渠道单日少了 5,820 人，占降幅 78.5%；iOS 也跌了 10.2%，同样超过阈值。</div>`:'');
+    else if(d.type==='rule')body=concl+`<div class="f-k">${['dau','avg7'].map(m=>{const k=KPI[m];return `<div><div class="l">${m==='dau'?'昨日 DAU':'近 7 天日均'}</div><div class="v num">${k.v}</div><div class="d ${k.tone}">${k.d}</div></div>`;}).join('')}</div>`+ai;
+    else if(d.style==='brief')body=concl+ai;
+    else if(d.style==='table')body=concl+pv+ai;
     else body=concl+(ks.length?`<div class="f-k">${ks.map(w=>{const k=KPI[w.m];return `<div><div class="l">${esc(w.title)}</div><div class="v num">${k.v}</div><div class="d ${k.tone}">${k.d}</div></div>`;}).join('')}</div>`:'')+chartB+
       (tb?`<div><div class="f-cap">${esc(tb.title)} · 降幅前 3</div><table class="f-t"><thead><tr><th>渠道</th><th>昨天</th><th>比前天</th></tr></thead><tbody>${rows(worst.slice(0,3))}</tbody></table></div>`:'')+ai;
   }
-  return phoneWrap(d,`<div class="fcard">${head}<div class="fb">${alert}${body}<div class="f-btns"><span class="p">打开移动端看板</span><span>追问原因</span><span>暂停任务</span></div><div class="f-foot">发给：${esc(recv)} · 按${ME}的数据权限执行</div></div></div>`);
+  return phoneWrap(d,`<div class="fcard">${head}<div class="fb">${alert}${body}<div class="f-btns">${d.type==='smart'||(d.type==='rule'&&tone==='red')?'<span class="p">追问原因</span><span>标记为正常波动</span><span>暂停提醒</span>':d.source==='sql'&&d.style==='table'?'<span class="p">打开完整结果</span><span>追问</span><span>暂停任务</span>':'<span class="p">打开移动端看板</span><span>追问原因</span><span>暂停任务</span>'}</div><div class="f-foot">发给：${esc(recv)} · 按${ME}的数据权限执行</div></div></div>`);
 }
 
 /* ---------- 复用控件：时间 / 类型 / 接收人 ---------- */
@@ -928,14 +940,16 @@ const STYLES=[['bi','轻 BI','指标卡 + 图 + 表'],['table','表格','整张�
 function thumb(k){if(k==='bi')return '<div class="thumb"><div class="k"><i></i><i></i></div><div class="c"></div></div>';
   if(k==='table')return '<div class="thumb"><i></i><i></i><i></i><i></i></div>';return '<div class="thumb"><i style="width:90%"></i><i style="width:70%"></i></div>';}
 function compText(d){if(d.type==='sub')return '问题 + 分析结论 + 1 张图';
-  if(d.style==='brief')return '结论 + 解读';if(d.style==='table')return '结论 + 整张渠道表';
+  if(d.type==='smart')return '异常说明 + 拆出的原因 + 30 天正常范围图';
+  if(d.type==='rule')return d.rule.miss==='brief'?'命中：告警 + 降幅前 3 渠道 + 趋势图；没命中：简短日报':'命中条件 + 降幅前 3 渠道 + 趋势图';
+  if(d.style==='brief')return '结论 + 解读';if(d.style==='table')return d.source==='sql'?'结论 + SQL 结果表 + 解读':'结论 + 整张渠道表';
   const k=d.W.filter(w=>w.type==='kpi').length;return `结论 + ${Math.min(k,4)} 个指标卡 + 1 张图 + 前 3 行表`;}
 function infoHTML(d){const n=nextRuns(d.freq,1)[0],always=d.type==='push'||d.type==='sub'||(d.type==='rule'&&d.rule.miss==='brief');
   return `<div><div class="lbl">下一次${d.type==='push'||d.type==='sub'?'发送':'检查'}</div><div class="nx-v num">${fmtRun(n)}</div><div class="hint">${freqText(d.freq)}${always?'':' · 命中条件才发'}</div></div>
   <dl class="kv"><dt>发给</dt><dd>${d.recv.map(r=>`<span class="mini-p">${esc(r.n)}</span>`).join('')||'<span class="hint">还没选</span>'}</dd>
   <dt>数据</dt><dd>${d.source==='sql'?'你的 SQL · 试跑 84 行 · 日期用 <code>\${biz_date}</code>':d.type==='sub'?'按问题重新取数，每次重新分析':'从你的话生成 SQL（2 条）· 已试跑 · 日期用 <code>\${biz_date}</code>'}</dd>
   <dt>执行身份</dt><dd>${ME} 的数据权限</dd><dt>卡片组成</dt><dd>${compText(d)}</dd></dl>
-  ${d.type==='sub'?'':`<div class="blk"><div class="lbl">卡片样式</div><div class="stylep">${STYLES.map(([k,n,s])=>`<button type="button" class="stb ${d.style===k?'on':''}" data-style="${k}">${thumb(k)}<b>${n}</b><small>${s}</small></button>`).join('')}</div></div>`}
+  ${d.type!=='push'?'':`<div class="blk"><div class="lbl">卡片样式</div><div class="stylep">${STYLES.map(([k,n,s])=>`<button type="button" class="stb ${d.style===k?'on':''}" data-style="${k}">${thumb(k)}<b>${n}</b><small>${s}</small></button>`).join('')}</div></div>`}
   <div class="tg"><button type="button" class="sw ${d.ai?'on':''}" data-ai aria-label="AI 解读"></button><span>AI 解读</span><span class="hint">2～3 句，数字只取自查询结果</span></div>`;}
 function widgetHTML(w){let inner='';
   if(w.type==='kpi'){const k=KPI[w.m];inner=`<div class="kv-v num">${k.v}</div><div class="kv-d ${k.tone}">${k.d}</div>${k.spark?spark(k.spark):''}`;}
@@ -1090,7 +1104,7 @@ function startFlow(raw){
   if(!sql&&/跌|涨|超过|低于|提醒|告警|监控|盯|异常/.test(rest))type=!hasPct&&/智能|异常|自动|盯/.test(rest)?'smart':'rule';
   else if(!sql&&/分析|原因|为什么|怎么回事/.test(rest))type='sub';
   const mm=[];if(/DAU|活跃/i.test(rest))mm.push('dau');if(/付费率/.test(rest))mm.push('rate');if(/付费人数/.test(rest))mm.push('pay');if(/充值|收入/.test(rest))mm.push('rev');
-  CD=newDraft({project:PROJECT,source:sql?'sql':'question',question:sql?'':rest,type,freq:f||newF(),mm:mm.length?mm:['dau'],
+  CD=newDraft({project:PROJECT,source:sql?'sql':'question',question:sql?'':rest,type,style:sql?'table':'bi',freq:f||newF(),mm:mm.length?mm:['dau'],
     name:PROJECT+' '+(sql?'渠道 DAU 日报':type==='smart'?(mm.length?mm.map(k=>MM[k]).join('、'):'核心指标')+' 智能监控':shortName(rest)+(type==='rule'?' 监控':''))});
   const pct=rest.match(/(\d+(?:\.\d+)?)\s*%/);if(pct)CD.rule.val=+pct[1];
   if(/上周同日|上周同一天/.test(rest))CD.rule.cmp='wow';
@@ -1098,7 +1112,9 @@ function startFlow(raw){
   if(/运营群/.test(rest))CD.recv.push({n:PROJECT+'运营群',g:true});
   if(/数据组/.test(rest))CD.recv.push({n:'数据组群',g:true});
   addU((sql?`<pre class="u-sql">${hl(sql)}</pre>`:'')+(rest?`<div>${esc(rest)}</div>`:''));
-  setHero(false);later(()=>setSplit(true),200);
+  setHero(false);$('#wsName').value=CD.name;$('#wsProj').textContent=CD.project;{const st=$('#wsStatus');st.textContent='草稿 · 生成中';st.classList.remove('live');}
+  $('#wsTabs [data-tab="mon"]').hidden=true;$$('#wsTabs button').forEach(b=>b.classList.remove('on'));
+  $('#wsBody').innerHTML='<div class="ws-load"><span class="spin"></span>正在取数、生成预览…</div>';later(()=>setSplit(true),200);
   const a=addA('<ul class="steps"></ul>');const ul=$('.steps',a);
   const tail=CD.recog.grp?'，接收人：运营群':'';
   const steps=type==='smart'?['识别到要建定时任务',`要盯的指标：${CD.mm.map(k=>MM[k]).join('、')}`,`生成取数 SQL（${CD.mm.length} 条），在「${PROJECT}」试跑通过`,(f?`识别到时间「${freqText(CD.freq)}」`:'没说时间，先按每天 09:00')+tail,'没给阈值，推荐「智能监控」：按近 4 周同一星期几学正常范围','用近 30 天数据回放：灵敏度「中」会提醒 1 次（11-16 华为掉量）','生成监控设置和告警卡预览']
@@ -1140,10 +1156,10 @@ function createFromChat(){
   toast(`已创建「${CD.name}」`);
   const a=addA(`<div>已在「${esc(CD.project)}」下创建<b>「${esc(CD.name)}」</b>，下次${CD.type==='push'||CD.type==='sub'?'发送':'检查'}是 ${fmtRun(nextRuns(CD.freq,1)[0])}。<button class="lnk" data-goto="tasks" type="button">去「定时任务」查看 →</button></div>
     <div class="ask" id="askInit"><div class="ask-h"><b>要不要接着配置一下？</b><span class="hint">都可以以后再改</span></div><div class="ask-b"><div class="inits">
-      <button class="init" type="button" data-init="rule"><b>${TICON.rule}加一个告警条件</b><span>跌超阈值才发，平时不打扰</span></button>
-      <button class="init" type="button" data-init="smart"><b>${TICON.smart}改成智能监控</b><span>自动学基线，异常才发并归因</span></button>
-      <button class="init" type="button" data-init="style"><b><svg ${SV}><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M4 10h16M10 10v10"/></svg>换卡片样式</b><span>轻 BI、表格或者只要结论</span></button>
-      <button class="init" type="button" data-init="test"><b>${TICON.push}现在发一次测试</b><span>发到你的飞书看看效果</span></button>
+      ${CD.type==='push'||CD.type==='sub'?'':'<!--'}<button class="init" type="button" data-init="rule"><b>${TICON.rule}加一个告警条件</b><span>跌超阈值才发，平时不打扰</span></button>${CD.type==='push'||CD.type==='sub'?'':'-->'}
+      ${CD.type==='smart'?'<!--':''}<button class="init" type="button" data-init="smart"><b>${TICON.smart}改成智能监控</b><span>自动学基线，异常才发并归因</span></button>${CD.type==='smart'?'-->':''}
+      ${CD.type==='push'?'':'<!--'}<button class="init" type="button" data-init="style"><b><svg ${SV}><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M4 10h16M10 10v10"/></svg>换卡片样式</b><span>轻 BI、表格或者只要结论</span></button>${CD.type==='push'?'':'-->'}
+      <button class="init" type="button" data-init="test"><b>${TICON.push}${CD.type==='push'||CD.type==='sub'?'现在发一次测试':'现在检查一次'}</b><span>发到你的飞书看看效果</span></button>
     </div><div class="initArea"></div></div></div>`);
   const card=$('#askInit',a),area=$('.initArea',card);
   card.addEventListener('click',e=>{const b=e.target.closest('[data-init]');if(!b)return;$$('.init',card).forEach(x=>x.classList.toggle('picked',x===b));const k=b.dataset.init;
@@ -1215,7 +1231,12 @@ $('#mergeClose').onclick=()=>{$('#mergeNote').hidden=true;};
 $('#tkBody').addEventListener('click',e=>{const b=e.target.closest('[data-tk]');if(!b)return;const t=TASKS.find(x=>x.id===b.closest('tr').dataset.id);if(!t)return;
   const a=b.dataset.tk;
   if(a==='tog'){t.on=!t.on;renderTasks();toast(t.on?`已启用「${t.name}」`:`已暂停「${t.name}」，到点不再执行`);}
-  if(a==='run'){const sent=t.type==='push'||t.type==='sub';t.last={k:sent?'ok':'quiet',t:'今天 '+pad(NOW.getHours())+':'+pad(NOW.getMinutes())+(sent?' 手动运行，已发送':' 手动运行，没命中')};renderTasks();toast(sent?'已按最新数据跑了一次，卡片发到了飞书':'已按最新数据检查了一次：没命中，没有发');}
+  if(a==='run'){const hm='今天 '+pad(NOW.getHours())+':'+pad(NOW.getMinutes()),dr=t.draft;let k,txt,msg;
+    if(t.type==='push'||t.type==='sub'){k='ok';txt=hm+' 已发送'+(dr&&dr.source==='sql'&&dr.style==='table'?' · 6 行表格':'');msg='已按最新数据跑了一次，卡片发到了飞书';}
+    else if(t.type==='smart'&&dr&&smartHit(dr)){k='alert';txt=hm+' 告警：DAU 低于正常范围 2.8σ，主要是华为渠道';msg='检查完：发现 1 个异常，橙色告警卡已发出';}
+    else if(t.type==='rule'&&dr&&ruleHit(dr).hit){k='alert';txt=hm+' 告警：DAU 比前天 -12.4%，超过 '+dr.rule.val+'%';msg='检查完：条件命中，红色告警卡已发出';}
+    else{k='quiet';txt=hm+' 检查完，没命中，没有发';msg='已按最新数据检查了一次：没命中，没有发';}
+    t.last={k,t:txt};renderTasks();const tr=$(`#tkBody tr[data-id="${t.id}"]`);if(tr){tr.classList.add('fresh');}toast(msg);}
   if(a==='del'){TASKS=TASKS.filter(x=>x!==t);renderTasks();toast(`已删除「${t.name}」`);}
   if(a==='edit')openMD(t);});
 $('#tkNew').onclick=()=>openMD();
@@ -1319,8 +1340,11 @@ const STEPS=[
  {c:'智能监控',t:'出异常时收到的告警卡',d:'橙色告警卡：偏离多少、按维度拆出的原因、30 天走势和正常范围。然后创建。',run:async tk=>{
    await tap('#wsTabs [data-tab="card"]',tk);await wait(500,tk);await moveTo('#wsBody .phone',tk,180,150);await wait(2600,tk);
    await tap('#askSum [data-create]',tk);await wait(1400,tk);}},
+ {c:'智能监控',t:'去「定时任务」看实际状态',d:'新任务排在最上面；点「立即运行」：检查出 1 个异常，状态变成告警，告警数加一。',run:async tk=>{
+   await tap('#menuTasks',tk);await wait(700,tk);const r=await moveTo('#tkBody tr:first-child td.name',tk);spot(r&&r.closest('tr'));await wait(1200,tk);
+   await tap('#tkBody tr:first-child [data-tk="run"]',tk);await wait(500,tk);await moveTo('#tkBody tr:first-child td.last',tk);await wait(1600,tk);spot($('#tkStats .stat.alert'));await moveTo('#tkStats .stat.alert',tk);await wait(1800,tk);}},
  {c:'常规监控',t:'自己定阈值：常规监控',d:'新对话说“每小时看一下 DAU，比前天跌超 10% 就提醒我”，阈值和频率都会识别。',run:async tk=>{
-   await tap('#btnNew',tk);await wait(700,tk);await tap('#outTask',tk);
+   await tap('#menuChat',tk);await wait(500,tk);await tap('#btnNew',tk);await wait(700,tk);await tap('#outTask',tk);
    await typeIn('#q','每小时看一下 DAU，比前天跌超 10% 就提醒我',tk);await tap('#send',tk);await need('#askTime',tk);await wait(700,tk);
    await moveTo('#wsBody .phone',tk,180,120);await wait(1500,tk);await tap('#askTime [data-ok]',tk);await need('#askType',tk);await wait(500,tk);}},
  {c:'常规监控',t:'改阈值，当场试算会不会命中',d:'改成 15%：昨天的数据不会命中，这次不发；改回 10%：命中，变回红色告警卡。',run:async tk=>{
@@ -1329,8 +1353,11 @@ const STEPS=[
  {c:'常规监控',t:'没命中时发不发，然后创建',d:'没命中的日子可以不发，也可以照常发日报。确认接收人后创建。',run:async tk=>{
    await moveTo('#askType [data-miss="silent"]',tk);await wait(900,tk);await tap('#askType [data-ok]',tk);await need('#askRecv',tk);await wait(400,tk);
    await tap('#askRecv [data-ok]',tk);await need('#askSum',tk);await wait(600,tk);await tap('#askSum [data-create]',tk);await wait(1300,tk);}},
+ {c:'常规监控',t:'去「定时任务」看实际状态',d:'点「立即运行」：DAU 比前天 -12.4%，超过 10%，状态变成告警。',run:async tk=>{
+   await tap('#menuTasks',tk);await wait(700,tk);const r=await moveTo('#tkBody tr:first-child td.name',tk);spot(r&&r.closest('tr'));await wait(1200,tk);
+   await tap('#tkBody tr:first-child [data-tk="run"]',tk);await wait(500,tk);await moveTo('#tkBody tr:first-child td.last',tk);await wait(1600,tk);spot($('#tkStats .stat.alert'));await wait(1600,tk);}},
  {c:'定时推送',t:'最常规的：贴 SQL 定时发',d:'新对话里粘贴 SQL，补一句“每天 9 点发到运营群”，不点「定时任务」也能识别。',run:async tk=>{
-   await tap('#btnNew',tk);await wait(600,tk);
+   await tap('#menuChat',tk);await wait(500,tk);await tap('#btnNew',tk);await wait(600,tk);
    const q=await moveTo('#q',tk);ripple();q.focus({preventScroll:true});q.value=SQL_PASTE+'\n';autoGrow();await wait(700,tk);
    await typeIn('#q','帮我建个定时任务，每天9点发到运营群',tk,true);await tap('#send',tk);await need('#askTime',tk);await wait(600,tk);
    await moveTo('#wsBody .phone',tk,180,140);await wait(2000,tk);}},
@@ -1342,11 +1369,14 @@ const STEPS=[
    await tap('#wsTabs [data-tab="board"]',tk);await wait(700,tk);
    await ghostDrag('#board .bw[data-id="c2"] .grip','#board .bw[data-id="c1"]','⋮⋮ 昨日分渠道 DAU',tk);moveWidget('c2','c1',false);await wait(900,tk);
    await tap('#board .bw[data-id="k1"] [data-act="sql"]',tk);await wait(2800,tk);await tap('#sqClose',tk);await wait(300,tk);}},
- {c:'定时推送',t:'创建后接着配置',d:'创建后给几个常用选项：加告警、改智能监控、换样式、发测试。这里换成表格。',run:async tk=>{
+ {c:'定时推送',t:'创建后接着配置',d:'贴 SQL 默认按表格发 SQL 结果；创建后也能换样式，这里试一下轻 BI 再换回表格。',run:async tk=>{
    await tap('#wsTabs [data-tab="card"]',tk);await tap('#askSum [data-create]',tk);await need('#askInit',tk);await wait(900,tk);
-   await tap('#askInit [data-init="style"]',tk);await wait(500,tk);await tap('#initStyle [data-st="table"]',tk);await wait(600,tk);await moveTo('#wsBody .phone',tk,180,140);await wait(2000,tk);}},
- {c:'定时任务页',t:'三个任务都在「定时任务」页',d:'刚建的三个任务排在最上面；原「订阅任务」也并到这里，显示为「问题订阅」。',run:async tk=>{
-   await tap('#menuTasks',tk);await wait(800,tk);await moveTo('#tkBody tr:nth-child(3) td.name',tk);await wait(900,tk);await moveTo('#tkBody tr:nth-child(1) td.name',tk);await wait(1300,tk);
+   await tap('#askInit [data-init="style"]',tk);await wait(500,tk);await tap('#initStyle [data-st="bi"]',tk);await wait(600,tk);await moveTo('#wsBody .phone',tk,180,140);await wait(1600,tk);await tap('#initStyle [data-st="table"]',tk);await wait(600,tk);await moveTo('#wsBody .phone',tk,180,140);await wait(1800,tk);}},
+ {c:'定时推送',t:'去「定时任务」看实际状态',d:'点「立即运行」：SQL 跑完，表格卡片已发送；上面建的两个监控也都在告警状态。',run:async tk=>{
+   await tap('#menuTasks',tk);await wait(700,tk);const r=await moveTo('#tkBody tr:first-child td.name',tk);spot(r&&r.closest('tr'));await wait(1200,tk);
+   await tap('#tkBody tr:first-child [data-tk="run"]',tk);await wait(500,tk);await moveTo('#tkBody tr:first-child td.last',tk);await wait(1600,tk);await moveTo('#tkBody tr:nth-child(3) td.last',tk);await wait(1400,tk);}},
+ {c:'定时任务页',t:'原「订阅任务」也并到这里',d:'订阅的问题显示为「问题订阅」，到点照旧重新分析；原来的订阅都保留。',run:async tk=>{
+   await wait(300,tk);
    spot($('#mergeNote'));await moveTo('#tkBody tr[data-origin="sub"] .ttag',tk);await wait(2000,tk);}},
  {c:'定时任务页',t:'也可以手动新建',d:'不经过对话也能建：同一套控件，右边一样实时预览。',run:async tk=>{
    await tap('#tkNew',tk);await wait(800,tk);await tap('#mdSrc [data-v="question"]',tk);
