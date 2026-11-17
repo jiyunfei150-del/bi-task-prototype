@@ -502,7 +502,7 @@ pre.sql{margin:0;background:var(--sunk);border:1px solid var(--line);border-radi
   <header class="nav">
     <span class="logo"><i></i>DATA</span>
     <div class="navlinks"><span>系统管理</span><span>CMDB</span><span>运维工单</span><span>查询系统</span><span>审批管理</span><span class="on">智能问数</span><span>更多</span></div>
-    <div class="right"><button class="demo-open" id="demoOpen" type="button">▶ 操作演示</button><span class="avatar">演</span><span class="uname">演示用户</span></div>
+    <div class="right"><button class="demo-open" id="demoOpen" type="button">▶ 操作演示</button><span class="avatar">吉</span><span class="uname">吉云飞</span></div>
   </header>
   <div class="demo" id="demo">
     <span class="badge num" id="demoStep">演示</span>
@@ -534,14 +534,14 @@ pre.sql{margin:0;background:var(--sunk);border:1px solid var(--line);border-radi
             <div class="chead">
               <button class="ib" id="btnHist" type="button" title="历史对话" aria-label="历史对话"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16M4 12h16M4 18h10"/></svg></button>
               <button class="ib" id="btnNew" type="button" title="新对话" aria-label="新对话"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg></button>
-              <div class="projsel">当前项目 <button id="projTop" type="button">项目A ▾</button></div>
+              <div class="projsel">当前项目 <button id="projTop" type="button">波克棋牌 ▾</button></div>
             </div>
             <div class="hist" id="hist" hidden>
               <h4>历史对话</h4>
-              <button type="button">本周充值对比上周同期<small>项目A · 昨天</small></button>
-              <button type="button">上周充值波动主要来自哪些渠道<small>项目A · 11-14</small></button>
-              <button type="button">近30天付费率变化趋势<small>项目B · 11-12</small></button>
-              <button type="button">新用户 7 日留存按渠道拆分<small>项目A · 11-10</small></button>
+              <button type="button">本周充值对比上周同期<small>波克棋牌 · 昨天</small></button>
+              <button type="button">上周充值波动主要来自哪些渠道<small>波克棋牌 · 11-14</small></button>
+              <button type="button">近30天付费率变化趋势<small>捕鱼游戏王 · 11-12</small></button>
+              <button type="button">新用户 7 日留存按渠道拆分<small>波克棋牌 · 11-10</small></button>
             </div>
             <div class="thread" id="thread"><div class="thread-in" id="threadIn"></div></div>
             <div class="composer"><div class="composer-in">
@@ -550,7 +550,7 @@ pre.sql{margin:0;background:var(--sunk);border:1px solid var(--line);border-radi
                 <textarea id="q" rows="2" placeholder="请输入你的问题，回车发送，Shift+回车换行"></textarea>
                 <div class="boxbar">
                   <span class="pill">Auto ▾</span>
-                  <span class="pill" id="projPill">▤ 项目A</span>
+                  <span class="pill" id="projPill">▤ 波克棋牌</span>
                   <div class="skillwrap">
                     <button class="pill" id="skillBtn" type="button">✦ 选择技能</button>
                     <div class="skillmenu" id="skillMenu" hidden>
@@ -571,7 +571,7 @@ pre.sql{margin:0;background:var(--sunk);border:1px solid var(--line);border-radi
           <section class="ws" id="ws" aria-label="预期效果">
             <div class="ws-h">
               <input class="ws-name" id="wsName" aria-label="任务名称">
-              <span class="projchip" title="任务跟着这段对话的项目走，按这个项目的数据源执行">🔒 项目 <b id="wsProj">项目A</b> · 随对话带入</span>
+              <span class="projchip" title="任务跟着这段对话的项目走，按这个项目的数据源执行">🔒 项目 <b id="wsProj">波克棋牌</b> · 随对话带入</span>
               <span class="status" id="wsStatus">草稿</span>
               <button class="ib ws-close" id="wsClose" type="button" aria-label="收起">×</button>
             </div>
@@ -652,8 +652,8 @@ const pad=n=>String(n).padStart(2,'0');
 const clone=o=>JSON.parse(JSON.stringify(o));
 let speed=1,userSpeed=1,ff=false;
 const later=(fn,ms)=>setTimeout(fn,ms/speed);
-const ME='演示用户';
-const PROJS=['项目A','项目B','项目C'];
+const ME='吉云飞';
+const PROJS=['波克棋牌','捕鱼游戏王','猎鱼达人3D'];
 let PROJECT=PROJS[0];
 const NOW=new Date(2026,10,17,10,20);
 const WD='日一二三四五六';
@@ -1174,14 +1174,14 @@ function newChat(){thread.innerHTML='';CD=null;flow=0;paints=[];wsTab='card';set
 /* ---------- 定时任务页 ---------- */
 const F=(kind,h,m,dow)=>({kind,h,m,dow:dow==null?1:dow,dom:1});
 const TASKS0=[
-  {id:'t1',name:'项目A 充值日报',type:'push',project:'项目A',src:'SQL × 3',origin:'manual',freq:F('daily',9,0),recv:['我','项目A运营群'],last:{k:'ok',t:'今天 09:00 已发送'},on:true},
-  {id:'t2',name:'每日充值波动分析',type:'sub',project:'项目A',src:'问题',origin:'sub',freq:F('daily',8,30),recv:['我'],last:{k:'ok',t:'今天 08:30 已发送'},on:true},
-  {id:'t3',name:'核心渠道 DAU 监控',type:'rule',project:'项目A',src:'SQL × 2',origin:'chat',freq:F('hourly',0,0),recv:['我'],last:{k:'quiet',t:'10:00 没命中，没有发'},on:true},
-  {id:'t4',name:'付费指标智能监控',type:'smart',project:'项目A',src:'SQL × 3',origin:'chat',freq:F('daily',8,0),recv:['我','数据组群'],last:{k:'alert',t:'今天 08:00 告警：付费率低于基线'},on:true},
-  {id:'t5',name:'渠道成本日报',type:'push',project:'项目A',src:'SQL × 1',origin:'manual',freq:F('daily',7,30),recv:['我'],last:{k:'fix',t:'今天 07:30 SQL 报错，已改为重新分析并发出'},on:true},
-  {id:'t6',name:'新用户留存周报',type:'sub',project:'项目A',src:'问题',origin:'sub',freq:F('weekly',10,0,1),recv:['数据组群'],last:{k:'ok',t:'11-16 10:00 已发送'},on:false},
-  {id:'t7',name:'项目B 付费周报',type:'push',project:'项目B',src:'SQL × 2',origin:'manual',freq:F('weekly',9,0,1),recv:['我'],last:{k:'ok',t:'11-16 09:00 已发送'},on:true},
-  {id:'t8',name:'项目C 活跃日报',type:'sub',project:'项目C',src:'问题',origin:'sub',freq:F('daily',9,30),recv:['我'],last:{k:'ok',t:'今天 09:30 已发送'},on:true}];
+  {id:'t1',name:'波克棋牌 充值日报',type:'push',project:'波克棋牌',src:'SQL × 3',origin:'manual',freq:F('daily',9,0),recv:['我','波克棋牌运营群'],last:{k:'ok',t:'今天 09:00 已发送'},on:true},
+  {id:'t2',name:'每日充值波动分析',type:'sub',project:'波克棋牌',src:'问题',origin:'sub',freq:F('daily',8,30),recv:['我'],last:{k:'ok',t:'今天 08:30 已发送'},on:true},
+  {id:'t3',name:'核心渠道 DAU 监控',type:'rule',project:'波克棋牌',src:'SQL × 2',origin:'chat',freq:F('hourly',0,0),recv:['我'],last:{k:'quiet',t:'10:00 没命中，没有发'},on:true},
+  {id:'t4',name:'付费指标智能监控',type:'smart',project:'波克棋牌',src:'SQL × 3',origin:'chat',freq:F('daily',8,0),recv:['我','数据组群'],last:{k:'alert',t:'今天 08:00 告警：付费率低于基线'},on:true},
+  {id:'t5',name:'渠道成本日报',type:'push',project:'波克棋牌',src:'SQL × 1',origin:'manual',freq:F('daily',7,30),recv:['我'],last:{k:'fix',t:'今天 07:30 SQL 报错，已改为重新分析并发出'},on:true},
+  {id:'t6',name:'新用户留存周报',type:'sub',project:'波克棋牌',src:'问题',origin:'sub',freq:F('weekly',10,0,1),recv:['数据组群'],last:{k:'ok',t:'11-16 10:00 已发送'},on:false},
+  {id:'t7',name:'捕鱼游戏王 付费周报',type:'push',project:'捕鱼游戏王',src:'SQL × 2',origin:'manual',freq:F('weekly',9,0,1),recv:['我'],last:{k:'ok',t:'11-16 09:00 已发送'},on:true},
+  {id:'t8',name:'猎鱼达人3D 活跃日报',type:'sub',project:'猎鱼达人3D',src:'问题',origin:'sub',freq:F('daily',9,30),recv:['我'],last:{k:'ok',t:'今天 09:30 已发送'},on:true}];
 let TASKS=clone(TASKS0),tkType='all',seqT=100,page='chat';
 const ORIGIN={manual:'手动创建',chat:'问数创建',sub:'原订阅任务'};
 function toTask(d,origin){return {id:'n'+(++seqT),name:d.name||'未命名任务',type:d.type,project:d.project,src:d.source==='sql'?'SQL × 1':'问题',origin,freq:clone(d.freq),recv:d.recv.map(r=>r.n),last:{k:'none',t:'还没运行'},on:true,fresh:true,isNew:true,draft:clone(d)};}
