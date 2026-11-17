@@ -1,0 +1,1305 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>问数轻看板原型</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;500;700&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+<style>
+/* 设计计划：沿用产品外壳（深靛顶栏 + 白色左菜单 + 页签），中性色偏靛蓝；强调色靛蓝 #3b4cd4，数据色蓝/青/橙/紫；
+   字体 Inter + Noto Sans SC，代码 JetBrains Mono；圆角 8~16 分层；智能问数默认输入框居中，选「定时任务」技能开问后对话收到左栏，右侧大面积放预期效果 */
+:root{
+  --bg:#f2f4f9; --surface:#ffffff; --sunk:#f6f7fb; --line:#e2e5ef; --line-2:#edeff5;
+  --ink:#151a2d; --ink-2:#454c66; --mute:#767d95; --faint:#a6abbf;
+  --nav:#0d1850; --nav-ink:#c3cbf0;
+  --acc:#3b4cd4; --acc-ink:#ffffff; --acc-soft:#eceefc; --acc-line:#c7cdf6;
+  --d1:#3b5bd9; --d2:#16a0a5; --d3:#e2892e; --d4:#9a5ad3;
+  --up:#14874a; --up-soft:#e6f5ec; --down:#cf342c; --down-soft:#fcebea; --warn:#b86500; --warn-soft:#fcf1e1; --vio:#7247c9; --vio-soft:#f1ebfc;
+  --fs:#3370ff; --fh-blue:#3370ff; --fh-red:#d83931; --fh-orange:#de7802; --fh-vio:#7f3bf5; --fs-bg:#eef0f5; --bezel:#1a1e2c;
+  --sh-1:0 1px 2px rgba(20,28,70,.05),0 2px 10px rgba(20,28,70,.05);
+  --sh-2:0 18px 44px rgba(20,28,70,.16);
+  --f-ui:"Inter","Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+  --f-num:"Inter",system-ui,sans-serif;
+  --f-code:"JetBrains Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0d1017; --surface:#151923; --sunk:#1a1f2c; --line:#293043; --line-2:#212738;
+  --ink:#e6e9f3; --ink-2:#bcc2d8; --mute:#8d94ac; --faint:#626981; --nav:#090e2b; --nav-ink:#b5bde8;
+  --acc:#8b99ff; --acc-ink:#0c1132; --acc-soft:#1f2549; --acc-line:#384284;
+  --d1:#7c93ff; --d2:#38c6c6; --d3:#f0a54e; --d4:#c38af0;
+  --up:#3ccc7b; --up-soft:#132c1e; --down:#ff6b62; --down-soft:#371b1d; --warn:#f0ab49; --warn-soft:#352813; --vio:#b391ff; --vio-soft:#251d40;
+  --fs:#4d82ff; --fs-bg:#0f121a; --bezel:#2a2f40; --sh-1:0 1px 2px rgba(0,0,0,.3); --sh-2:0 18px 44px rgba(0,0,0,.5); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0d1017; --surface:#151923; --sunk:#1a1f2c; --line:#293043; --line-2:#212738;
+  --ink:#e6e9f3; --ink-2:#bcc2d8; --mute:#8d94ac; --faint:#626981; --nav:#090e2b; --nav-ink:#b5bde8;
+  --acc:#8b99ff; --acc-ink:#0c1132; --acc-soft:#1f2549; --acc-line:#384284;
+  --d1:#7c93ff; --d2:#38c6c6; --d3:#f0a54e; --d4:#c38af0;
+  --up:#3ccc7b; --up-soft:#132c1e; --down:#ff6b62; --down-soft:#371b1d; --warn:#f0ab49; --warn-soft:#352813; --vio:#b391ff; --vio-soft:#251d40;
+  --fs:#4d82ff; --fs-bg:#0f121a; --bezel:#2a2f40; --sh-1:0 1px 2px rgba(0,0,0,.3); --sh-2:0 18px 44px rgba(0,0,0,.5); color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.6 var(--f-ui);-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:0;padding:0}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px;border-radius:6px}
+.num{font-family:var(--f-num);font-variant-numeric:tabular-nums}
+.hint{font-size:12px;color:var(--mute)}
+.sp{flex:1}
+.dn{color:var(--down)}.upc{color:var(--up)}.wn{color:var(--warn)}
+code{font:12px var(--f-code);background:var(--sunk);border:1px solid var(--line-2);border-radius:4px;padding:0 4px}
+
+.app{height:100%;display:flex;flex-direction:column}
+.nav{flex:none;height:48px;background:var(--nav);color:var(--nav-ink);display:flex;align-items:center;gap:30px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.logo{display:flex;align-items:center;gap:9px;color:#fff;font-weight:700;letter-spacing:.08em;font-size:15px}
+.logo i{width:22px;height:22px;border-radius:7px;background:#4a5cf0;box-shadow:inset 0 0 0 5px #7a89ff}
+.navlinks{display:flex;gap:24px;font-size:13px;white-space:nowrap;overflow:hidden;min-width:0}
+.navlinks span{opacity:.75}
+.navlinks span.on{opacity:1;color:#fff;font-weight:600;box-shadow:0 14px 0 -12px #fff}
+.nav .right{margin-left:auto;display:flex;align-items:center;gap:12px;font-size:13px;white-space:nowrap}
+.demo-open{border:1px solid rgba(255,255,255,.3);border-radius:999px;padding:3px 12px;color:#fff;font-size:12px}
+.demo-open:hover{background:rgba(255,255,255,.1)}
+.avatar{width:26px;height:26px;border-radius:50%;background:#2c3b93;color:#fff;display:grid;place-items:center;font-size:12px}
+.frame{flex:1;min-height:0;display:flex}
+.side{width:210px;flex:none;background:var(--surface);border-right:1px solid var(--line-2);padding:12px 10px;display:flex;flex-direction:column;gap:2px;overflow:auto}
+.grp{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;color:var(--ink-2);font-size:14px}
+.grp svg{flex:none;color:var(--mute)}
+.grp .lb{flex:1}
+.grp .ar{color:var(--faint);font-size:10px}
+.sub{display:flex;align-items:center;gap:8px;width:100%;text-align:left;padding:8px 10px 8px 40px;border-radius:8px;color:var(--mute);font-size:13.5px}
+.sub:hover{color:var(--ink)}
+.sub.on{background:var(--acc-soft);color:var(--acc);font-weight:600}
+.nb{font-size:10px;line-height:16px;background:var(--acc);color:var(--acc-ink);border-radius:4px;padding:0 5px;font-weight:600}
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.tabs{height:42px;display:flex;align-items:flex-end;gap:2px;padding:0 12px;flex:none;overflow-x:auto}
+.tabs button{padding:8px 18px;border-radius:9px 9px 0 0;color:var(--mute);font-size:13px;white-space:nowrap}
+.tabs button.on{background:var(--surface);color:var(--ink);font-weight:600}
+.view{flex:1;min-height:0;margin:0 12px 12px;background:var(--surface);border-radius:0 14px 14px 14px;box-shadow:var(--sh-1);overflow:hidden;position:relative}
+
+.demo{flex:none;display:flex;align-items:center;gap:14px;background:var(--surface);border-bottom:1px solid var(--line);padding-block:7px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));position:relative;z-index:70}
+.demo .badge{font-size:12px;color:var(--acc-ink);background:var(--acc);border-radius:999px;padding:1px 10px;flex:none;font-weight:600}
+.demo .txt{flex:1;min-width:0;font-size:13px;line-height:1.45}
+.demo .txt b{font-weight:600;margin-right:8px}
+.demo .txt span{color:var(--mute)}
+.segs{display:flex;gap:3px;flex:none;width:min(340px,28vw)}
+.segs button{flex:1;min-width:0;padding:9px 0}
+.segs i{display:block;height:4px;border-radius:2px;background:var(--line);transition:background .2s,transform .15s}
+.segs button:hover i{background:var(--acc-line);transform:scaleY(1.9)}
+.segs button.done i{background:var(--acc)}
+.segs button.cur i{background:var(--acc);animation:blink 1.2s ease-in-out infinite}
+@keyframes blink{50%{opacity:.35}}
+.dctl{display:flex;gap:6px;flex:none}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:9px;padding:6px 14px;font-size:13px;white-space:nowrap;transition:border-color .15s,background .15s}
+.btn:hover{border-color:var(--acc-line)}
+.btn.pri{background:var(--acc);border-color:var(--acc);color:var(--acc-ink);font-weight:600}
+.btn.pri:hover{filter:brightness(1.08)}
+.btn.sm{padding:4px 11px;font-size:12.5px}
+.btn:disabled{opacity:.55;cursor:default}
+.ib{display:inline-grid;place-items:center;min-width:28px;height:28px;border-radius:8px;color:var(--mute);font-size:12.5px;padding:0 6px}
+.ib:hover{background:var(--sunk);color:var(--acc)}
+.lnk{color:var(--acc);font-size:12.5px;font-weight:500}
+.lnk:hover{text-decoration:underline}
+.seg{display:inline-flex;flex-wrap:wrap;background:var(--sunk);border:1px solid var(--line-2);border-radius:10px;padding:2px;gap:2px}
+.seg button{padding:4px 12px;border-radius:8px;font-size:12.5px;color:var(--ink-2)}
+.seg button.on{background:var(--surface);color:var(--acc);font-weight:600;box-shadow:var(--sh-1)}
+.seg.sm button{padding:2px 10px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.chip{border:1px solid var(--line);border-radius:8px;padding:3px 10px;font-size:12.5px;background:var(--surface);color:var(--ink-2)}
+.chip:hover{border-color:var(--acc-line)}
+.chip.on{border-color:var(--acc);color:var(--acc);background:var(--acc-soft);font-weight:600}
+.chip.time{font-family:var(--f-num);font-variant-numeric:tabular-nums}
+.in{border:1px solid var(--line);border-radius:9px;padding:6px 10px;background:var(--surface);width:100%;min-width:0;outline:0;transition:border-color .15s,box-shadow .15s}
+.in:focus{border-color:var(--acc-line);box-shadow:0 0 0 3px var(--acc-soft)}
+.in.sel{width:auto;padding:4px 8px}
+.in.code{font:12.5px/1.65 var(--f-code);resize:vertical}
+.sw{width:34px;height:20px;border-radius:999px;background:var(--line);position:relative;flex:none;transition:background .15s}
+.sw::after{content:"";position:absolute;width:16px;height:16px;border-radius:50%;background:var(--surface);top:2px;left:2px;transition:left .15s;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+.sw.on{background:var(--acc)}.sw.on::after{left:16px}
+.note{font-size:12.5px;color:var(--ink-2);background:var(--sunk);border-radius:9px;padding:8px 11px;line-height:1.55}
+.eval{font-size:12.5px;border-radius:8px;padding:6px 10px;background:var(--sunk);color:var(--ink-2)}
+.eval.hit{background:var(--down-soft);color:var(--down)}
+.eval.miss{background:var(--up-soft);color:var(--up)}
+
+.chatpage{height:100%;display:flex;overflow:hidden}
+.chat{flex:0 0 100%;min-width:0;display:flex;flex-direction:column;position:relative;transition:flex-basis .6s cubic-bezier(.3,.7,.2,1)}
+.chatpage.split .chat{flex-basis:clamp(360px,34%,460px);border-right:1px solid var(--line)}
+.ws{flex:1 1 0;min-width:0;display:flex;flex-direction:column;background:var(--sunk);opacity:0;transform:translateX(28px);transition:opacity .45s .25s,transform .55s .2s}
+.chatpage:not(.split) .ws{visibility:hidden}
+.chatpage.split .ws{opacity:1;transform:none}
+.chead{display:flex;align-items:center;gap:6px;padding:10px 14px;flex:none;z-index:3}
+.chat.hero .chead{position:absolute;inset:0 0 auto}
+.projsel{margin-left:auto;font-size:13px;color:var(--mute);display:flex;align-items:center;gap:6px;white-space:nowrap}
+.projsel button{border:1px solid var(--line);border-radius:8px;padding:2px 10px;color:var(--ink);font-weight:500}
+.hist{position:absolute;left:10px;top:50px;width:260px;max-height:calc(100% - 64px);overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--sh-2);padding:8px;z-index:6}
+.hist h4{margin:4px 8px 6px;font-size:12px;color:var(--mute);font-weight:500}
+.hist button{display:block;width:100%;text-align:left;padding:7px 9px;border-radius:8px;font-size:13px}
+.hist button:hover{background:var(--sunk)}
+.hist small{display:block;color:var(--faint);font-size:11px}
+.thread{flex:1;min-height:0;overflow:auto;padding:4px 18px 10px}
+.thread-in{max-width:780px;margin:0 auto;display:flex;flex-direction:column;gap:16px;padding-top:6px}
+.chat.hero{justify-content:center}
+.chat.hero .thread{display:none}
+.composer{flex:none;padding:6px 18px 16px}
+.composer-in{max-width:780px;margin:0 auto;position:relative}
+.chat.hero .composer{padding-bottom:9vh}
+.herotop{display:flex;flex-direction:column;align-items:center;gap:6px;margin-bottom:22px;text-align:center}
+.herotop h1{margin:0;font-size:27px;font-weight:650;letter-spacing:-.01em;text-wrap:balance}
+.herotop p{margin:0;color:var(--mute);max-width:520px}
+.chat:not(.hero) .herotop,.chat:not(.hero) .starters{display:none}
+.box{border:1px solid var(--line);border-radius:16px;background:var(--surface);box-shadow:var(--sh-1);padding:12px 14px 10px;transition:border-color .2s,box-shadow .2s}
+.box:focus-within{border-color:var(--acc-line);box-shadow:0 0 0 4px var(--acc-soft)}
+.box textarea{display:block;width:100%;border:0;outline:0;resize:none;background:transparent;min-height:46px;max-height:200px;line-height:1.6;padding:0}
+.boxbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:8px}
+.pill{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);border-radius:999px;padding:3px 11px;font-size:12.5px;color:var(--ink-2);background:var(--surface);white-space:nowrap}
+.pill:hover{border-color:var(--acc-line)}
+.pill.on{background:var(--acc-soft);border-color:var(--acc-line);color:var(--acc);font-weight:600}
+.pill.on .x{margin-left:2px;width:16px;height:16px;border-radius:50%;display:grid;place-items:center;font-size:12px}
+.pill.on .x:hover{background:var(--acc-line)}
+.send{margin-left:auto;width:34px;height:34px;border-radius:10px;background:var(--acc);color:var(--acc-ink);display:grid;place-items:center}
+.send:hover{filter:brightness(1.08)}
+.skillwrap{position:relative}
+.skillmenu{position:absolute;left:0;bottom:calc(100% + 8px);width:290px;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--sh-2);padding:6px;z-index:20}
+.chat.hero .skillmenu{bottom:auto;top:calc(100% + 8px)}
+.skillmenu button{display:grid;grid-template-columns:30px 1fr;gap:0 10px;align-items:center;width:100%;text-align:left;padding:8px;border-radius:9px}
+.skillmenu button:hover{background:var(--sunk)}
+.skillmenu .si{grid-row:1/3;width:30px;height:30px;border-radius:8px;display:grid;place-items:center;background:var(--sunk);color:var(--ink-2)}
+.skillmenu button[data-skill="task"] .si{background:var(--acc-soft);color:var(--acc)}
+.skillmenu b{font-size:13px;font-weight:600;display:flex;gap:6px;align-items:center}
+.skillmenu span.d{font-size:12px;color:var(--mute)}
+.outs{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--mute);margin-top:10px;flex-wrap:wrap}
+.out{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:8px;padding:3px 10px;font-size:12.5px;color:var(--ink-2);background:var(--surface)}
+.out:hover{border-color:var(--acc-line)}
+.out.on{border-color:var(--acc);background:var(--acc-soft);color:var(--acc);font-weight:600}
+.starters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:18px}
+.starter{text-align:left;border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--surface);display:flex;flex-direction:column;gap:3px;transition:border-color .15s,background .15s}
+.starter:hover{border-color:var(--acc-line);background:var(--acc-soft)}
+.starter b{font-size:13.5px;font-weight:600;display:flex;align-items:center;gap:7px}
+.starter b svg{color:var(--acc)}
+.starter span{font-size:12.5px;color:var(--mute)}
+.wsfab{display:none}
+
+.msg-u{align-self:flex-end;max-width:92%;background:var(--acc-soft);border-radius:14px 14px 4px 14px;padding:10px 14px;min-width:0;animation:rise .3s ease}
+.u-sql{margin:0 0 8px;font:12px/1.6 var(--f-code);background:var(--surface);border:1px solid var(--acc-line);border-radius:9px;padding:8px 10px;max-height:132px;overflow:auto;white-space:pre}
+.msg-a{display:flex;gap:10px;align-items:flex-start;min-width:0;animation:rise .3s ease}
+@keyframes rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.av{width:28px;height:28px;border-radius:9px;background:var(--acc);color:var(--acc-ink);display:grid;place-items:center;flex:none;font-size:12px;font-weight:700}
+.a-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:10px}
+.steps{list-style:none;margin:0;padding:10px 12px;border:1px solid var(--line-2);border-radius:11px;background:var(--sunk);font-size:12.5px;display:flex;flex-direction:column;gap:6px}
+.steps li{display:flex;gap:9px;align-items:flex-start;color:var(--ink-2);animation:rise .25s ease}
+.steps .ic{width:16px;height:16px;margin-top:2px;border-radius:50%;border:1.5px solid var(--acc);border-top-color:transparent;flex:none;display:grid;place-items:center;font-size:9px;color:transparent;animation:spin .8s linear infinite}
+.steps li.ok .ic{animation:none;background:var(--up);border-color:var(--up);color:var(--surface)}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ask{border:1px solid var(--line);border-radius:13px;background:var(--surface);box-shadow:var(--sh-1);overflow:hidden;animation:rise .3s ease}
+.ask-h{display:flex;align-items:center;gap:8px;padding:12px 14px 0;flex-wrap:wrap}
+.ask-n{font-size:11px;color:var(--acc);font-weight:700;letter-spacing:.06em}
+.ask-h b{font-size:14px;font-weight:600}
+.ask-tag{margin-left:auto;font-size:11.5px;color:var(--up);background:var(--up-soft);padding:1px 8px;border-radius:999px}
+.ask-b{padding:10px 14px 4px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.ask-f{display:flex;align-items:center;gap:8px;padding:8px 14px 12px;flex-wrap:wrap}
+.ask-done{display:none;align-items:center;gap:8px;padding:9px 14px;font-size:13px;color:var(--ink-2)}
+.ask-done .okc{width:18px;height:18px;border-radius:50%;background:var(--up);color:var(--surface);display:grid;place-items:center;font-size:11px;flex:none}
+.ask-done .sum{flex:1;min-width:0}
+.ask.done{box-shadow:none;background:var(--sunk);border-color:var(--line-2)}
+.ask.done .ask-h,.ask.done .ask-b,.ask.done .ask-f{display:none}
+.ask.done .ask-done{display:flex}
+.tw,.tyw,.rw{display:flex;flex-direction:column;gap:9px}
+.tw-custom{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--mute)}
+.tw-custom .in{width:auto;padding:2px 6px}
+.nexts{font-size:12px;color:var(--mute);display:flex;flex-wrap:wrap;gap:2px 8px}
+.nexts b{color:var(--ink-2);font-weight:500}
+.types{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.type{position:relative;text-align:left;border:1.5px solid var(--line);border-radius:11px;padding:10px 12px;display:grid;grid-template-columns:30px minmax(0,1fr);gap:1px 10px;align-items:start;background:var(--surface);transition:border-color .15s,background .15s}
+.type:hover{border-color:var(--acc-line)}
+.type .ti{grid-row:1/3;width:30px;height:30px;border-radius:9px;display:grid;place-items:center}
+.type b{font-size:13.5px;font-weight:600}
+.type span{font-size:12px;color:var(--mute);line-height:1.45}
+.type.on{border-color:var(--acc);background:var(--acc-soft)}
+.type .rec{position:absolute;top:8px;right:8px;font-size:10.5px;font-style:normal;color:var(--acc);border:1px solid var(--acc-line);border-radius:5px;padding:0 5px;background:var(--surface)}
+.t-push .ti{background:var(--acc-soft);color:var(--acc)}
+.t-sub .ti{background:var(--vio-soft);color:var(--vio)}
+.t-rule .ti{background:var(--down-soft);color:var(--down)}
+.t-smart .ti{background:var(--warn-soft);color:var(--warn)}
+.type.on .ti{background:var(--surface)}
+.rulef{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:13px}
+.rulef .val{width:64px}
+.recv{display:flex;flex-wrap:wrap;gap:6px}
+.person{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:2px 4px 2px 3px;font-size:12.5px;background:var(--surface)}
+.person .pa{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-size:10px;color:var(--acc-ink);background:var(--acc)}
+.person.grp .pa{background:var(--d2);color:var(--surface)}
+.person button{width:18px;height:18px;border-radius:50%;color:var(--mute);font-size:13px;line-height:1}
+.person button:hover{background:var(--sunk);color:var(--down)}
+.rw-sug{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.kv{display:grid;grid-template-columns:72px minmax(0,1fr);gap:7px 12px;font-size:13px;margin:0}
+.kv dt{color:var(--mute)}
+.kv dd{margin:0;min-width:0}
+.mini-p{display:inline-block;font-size:12px;border:1px solid var(--line);border-radius:999px;padding:0 8px;margin:0 4px 4px 0;background:var(--surface)}
+.inits{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.init{text-align:left;border:1px solid var(--line);border-radius:11px;padding:10px 12px;display:flex;flex-direction:column;gap:2px;background:var(--surface);transition:border-color .15s,background .15s}
+.init:hover{border-color:var(--acc-line);background:var(--acc-soft)}
+.init b{font-size:13px;font-weight:600;display:flex;align-items:center;gap:7px}
+.init b svg{color:var(--acc)}
+.init span{font-size:12px;color:var(--mute)}
+.init.picked{border-color:var(--up);background:var(--up-soft)}
+.mini{border:1px dashed var(--line);border-radius:11px;padding:10px 12px;display:flex;flex-direction:column;gap:9px}
+.created{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--up);font-weight:500}
+
+.ws-h{display:flex;align-items:center;gap:10px;padding:12px 22px;background:var(--surface);border-bottom:1px solid var(--line-2);flex-wrap:wrap}
+.ws-name{flex:1 1 220px;min-width:0;font-size:16px;font-weight:650;border:1px solid transparent;border-radius:8px;padding:3px 8px;margin-left:-8px;background:transparent;outline:0}
+.ws-name:hover{border-color:var(--line)}
+.ws-name:focus{border-color:var(--acc-line);box-shadow:0 0 0 3px var(--acc-soft)}
+.projchip{display:inline-flex;align-items:center;gap:6px;font-size:12px;border:1px solid var(--line);border-radius:999px;padding:2px 10px;color:var(--mute);white-space:nowrap}
+.projchip b{color:var(--acc);font-weight:600}
+.status{font-size:12px;padding:2px 10px;border-radius:999px;background:var(--sunk);color:var(--mute);white-space:nowrap;border:1px solid var(--line-2)}
+.status.live{background:var(--up-soft);color:var(--up);border-color:transparent}
+.ws-tabs{display:flex;gap:22px;padding:0 22px;background:var(--surface);border-bottom:1px solid var(--line-2);overflow-x:auto}
+.ws-tabs button{padding:10px 0 9px;font-size:13.5px;color:var(--mute);border-bottom:2px solid transparent;white-space:nowrap}
+.ws-tabs button.on{color:var(--ink);border-bottom-color:var(--acc);font-weight:600}
+.ws-b{flex:1;min-height:0;overflow:auto;padding:24px;container-type:inline-size}
+.ws-close{display:none}
+.pvgrid{display:grid;grid-template-columns:minmax(290px,350px) minmax(0,1fr);gap:32px;align-items:start;max-width:960px;margin:0 auto}
+@container (max-width:700px){.pvgrid{grid-template-columns:minmax(0,1fr)}}
+.info{display:flex;flex-direction:column;gap:20px;min-width:0}
+.lbl{font-size:11.5px;color:var(--mute);letter-spacing:.06em;font-weight:600}
+.nx-v{font-size:24px;font-weight:650;letter-spacing:-.01em;margin-top:2px}
+.blk{display:flex;flex-direction:column;gap:8px}
+.stylep{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.stb{border:1.5px solid var(--line);border-radius:11px;padding:8px;display:flex;flex-direction:column;gap:6px;background:var(--surface);text-align:left}
+.stb:hover{border-color:var(--acc-line)}
+.stb.on{border-color:var(--acc);background:var(--acc-soft)}
+.stb b{font-size:12.5px;font-weight:600}
+.stb small{font-size:11px;color:var(--mute)}
+.thumb{height:50px;border-radius:7px;background:var(--sunk);padding:6px;display:grid;gap:3px;align-content:start}
+.thumb i{display:block;height:6px;border-radius:2px;background:var(--line)}
+.thumb .k{display:grid;grid-template-columns:1fr 1fr;gap:3px}
+.thumb .k i{height:9px;background:var(--acc-line)}
+.thumb .c{height:14px;border-radius:3px;background:var(--acc-line);opacity:.7}
+.tg{display:flex;align-items:center;gap:10px;font-size:13px}
+
+.phone{width:100%;max-width:350px;margin:0 auto;border-radius:36px;padding:9px;background:var(--bezel);box-shadow:var(--sh-2)}
+.screen{border-radius:28px;overflow:hidden;background:var(--fs-bg)}
+.fs-top{display:flex;align-items:center;gap:10px;padding:14px 14px 10px;background:var(--surface);border-bottom:1px solid var(--line-2);font-size:13px}
+.fs-back{font-size:20px;line-height:1;color:var(--mute)}
+.fs-title{display:flex;align-items:center;gap:6px}
+.fs-title em{font-style:normal;font-size:10px;color:var(--fs);border:1px solid var(--fs);border-radius:4px;padding:0 4px}
+.fs-scroll{max-height:600px;overflow:auto;padding:12px 10px 16px}
+.fs-time{text-align:center;font-size:11px;color:var(--faint);margin-bottom:8px}
+.fs-row{display:flex;gap:8px;align-items:flex-start}
+.fs-av{width:30px;height:30px;border-radius:9px;background:var(--acc);color:var(--acc-ink);display:grid;place-items:center;font-size:12px;font-weight:700;flex:none}
+.fcard{flex:1;min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.fh{padding:10px 12px;color:#fff;background:var(--fh-blue)}
+.fh.red{background:var(--fh-red)}.fh.orange{background:var(--fh-orange)}.fh.violet{background:var(--fh-vio)}
+.fh .t{font-weight:650;font-size:14.5px;line-height:1.4}
+.fh .s{font-size:11.5px;opacity:.9}
+.fb{padding:10px 12px 12px;display:flex;flex-direction:column;gap:10px;font-size:13px}
+.f-alert{border-radius:8px;padding:8px 10px;font-size:12.5px}
+.f-alert.red{background:var(--down-soft);color:var(--down)}
+.f-alert.orange{background:var(--warn-soft);color:var(--warn)}
+.f-alert ul{margin:4px 0 0;padding-left:16px;color:var(--ink)}
+.f-k{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.f-k>div{background:var(--sunk);border-radius:8px;padding:7px 9px;min-width:0}
+.f-k .l{font-size:11.5px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.f-k .v{font-size:16px;font-weight:650}
+.f-k .d{font-size:11.5px}
+.f-chart{height:130px}
+.f-cap{font-size:11.5px;color:var(--mute)}
+table.f-t{width:100%;border-collapse:collapse;font-size:12px}
+.f-t th{color:var(--mute);font-weight:500;text-align:right;padding:4px 6px;border-bottom:1px solid var(--line)}
+.f-t td{text-align:right;padding:4px 6px;border-bottom:1px solid var(--line-2)}
+.f-t th:first-child,.f-t td:first-child{text-align:left}
+.f-ai{font-size:12.5px;color:var(--ink-2)}
+.f-ai b{color:var(--ink)}
+.f-q{font-size:12.5px;background:var(--vio-soft);color:var(--vio);border-radius:8px;padding:7px 10px}
+.f-btns{display:flex;gap:6px;flex-wrap:wrap}
+.f-btns span{border:1px solid var(--line);border-radius:6px;padding:4px 10px;font-size:12px}
+.f-btns span.p{background:var(--fs);border-color:var(--fs);color:#fff}
+.f-foot{font-size:11px;color:var(--faint);border-top:1px solid var(--line-2);padding-top:8px}
+.fs-empty{flex:1;text-align:center;color:var(--mute);padding:36px 12px;border:1px dashed var(--line);border-radius:10px;background:var(--surface);font-size:13px}
+.fs-empty b{color:var(--ink)}
+
+.bd-head{display:flex;gap:16px;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;margin-bottom:14px}
+.bd-head b{font-size:15px}
+.bd-add{display:flex;gap:8px;flex:1 1 300px;max-width:440px}
+.board{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;grid-auto-flow:row dense}
+@container (max-width:640px){.board{grid-template-columns:repeat(2,minmax(0,1fr))}.board .bw{grid-column:span min(var(--span),2)!important}}
+.bw{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:10px 14px 12px;min-width:0;display:flex;flex-direction:column;transition:border-color .15s,box-shadow .15s}
+.bw:hover{border-color:var(--acc-line)}
+.bw.dragging{opacity:.35}
+.bw.drop-l{box-shadow:-4px 0 0 var(--acc)}
+.bw.drop-r{box-shadow:4px 0 0 var(--acc)}
+.bw.flash{animation:flash 1.3s ease}
+@keyframes flash{0%{box-shadow:0 0 0 4px var(--acc-line)}100%{box-shadow:0 0 0 0 transparent}}
+.bw .h{display:flex;align-items:center;gap:4px;min-height:26px}
+.grip{cursor:grab;color:var(--faint);font-size:13px;letter-spacing:-2px;padding:0 3px;line-height:1}
+.bw .t{flex:1;min-width:0;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bw .acts{display:flex;opacity:.5;transition:opacity .15s}
+.bw:hover .acts,.bw:focus-within .acts{opacity:1}
+.kv-v{font-size:23px;font-weight:650;letter-spacing:-.01em;margin-top:2px;line-height:1.3}
+.kv-d{font-size:12px}
+.spark{display:block;width:100%;height:26px;margin-top:6px}
+.bw .chart{height:200px}
+.pop{position:absolute;right:10px;top:36px;z-index:5;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:var(--sh-2);padding:4px;min-width:120px}
+.pop button{display:block;width:100%;text-align:left;padding:6px 10px;border-radius:7px;font-size:13px}
+.pop button:hover,.pop button.on{background:var(--acc-soft);color:var(--acc)}
+table.dt{width:100%;border-collapse:collapse;font-size:12.5px}
+.dt th{color:var(--mute);font-weight:500;text-align:right;padding:6px 8px;border-bottom:1px solid var(--line)}
+.dt td{text-align:right;padding:6px 8px;border-bottom:1px solid var(--line-2)}
+.dt th:first-child,.dt td:first-child{text-align:left}
+.tw-x{overflow-x:auto}
+
+.plan{max-width:860px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:26px}
+@container (max-width:700px){.plan{grid-template-columns:minmax(0,1fr)}}
+.plan h3{margin:0 0 10px;font-size:14px;font-weight:600}
+.runs{list-style:none;margin:0;padding:0;border:1px solid var(--line);border-radius:12px;background:var(--surface);overflow:hidden}
+.runs li{display:flex;align-items:center;gap:10px;padding:10px 14px;border-top:1px solid var(--line-2);font-size:13px}
+.runs li:first-child{border-top:0;background:var(--acc-soft)}
+.runs .when{font-weight:500}
+.runs .act{margin-left:auto;font-size:12px;color:var(--mute)}
+.runs .nx{font-size:11px;color:var(--acc);font-weight:600}
+.flow{list-style:none;margin:0;padding:0;counter-reset:f;display:flex;flex-direction:column}
+.flow li{counter-increment:f;display:grid;grid-template-columns:26px 1fr;gap:10px;padding:0 0 14px;position:relative;font-size:13px}
+.flow li::before{content:counter(f);width:24px;height:24px;border-radius:50%;background:var(--surface);border:1.5px solid var(--acc-line);color:var(--acc);display:grid;place-items:center;font-size:11.5px;font-weight:700;z-index:1}
+.flow li::after{content:"";position:absolute;left:12px;top:24px;bottom:0;width:1.5px;background:var(--line)}
+.flow li:last-child::after{display:none}
+.flow small{display:block;color:var(--mute);font-size:12px}
+.fallback{margin-top:8px;border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:12px 14px;font-size:12.5px;display:flex;flex-direction:column;gap:6px}
+.fallback div{display:grid;grid-template-columns:96px 1fr;gap:10px}
+.fallback span{color:var(--mute)}
+.basechart{height:180px;border:1px solid var(--line);border-radius:12px;background:var(--surface);margin-top:12px}
+
+.tasks{height:100%;overflow:auto;padding:24px 28px 28px;display:flex;flex-direction:column;gap:16px}
+.tk-head{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap}
+.tk-head h2{margin:0;font-size:21px;font-weight:650;letter-spacing:-.01em}
+.tk-head p{margin:2px 0 0}
+.merge{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--acc-line);background:var(--acc-soft);border-radius:11px;padding:10px 12px;font-size:13px;color:var(--ink-2)}
+.merge .mi{width:18px;height:18px;border-radius:50%;background:var(--acc);color:var(--acc-ink);display:grid;place-items:center;font-size:11px;font-weight:700;flex:none;margin-top:1px}
+.merge b{color:var(--ink);font-weight:600}
+.merge .ib{margin-left:auto}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.stat{border:1px solid var(--line);border-radius:13px;padding:12px 16px;background:var(--surface)}
+.stat .l{font-size:12.5px;color:var(--mute)}
+.stat .v{font-size:24px;font-weight:650;letter-spacing:-.01em}
+.stat .s{font-size:12px;color:var(--mute)}
+.stat.alert .v{color:var(--down)}
+.stat.fix{border-color:var(--warn);background:var(--warn-soft)}
+.stat.fix .v{color:var(--warn)}
+.tk-bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.tk-bar .in:not(.sel){width:200px}
+.tbl{border:1px solid var(--line);border-radius:13px;overflow:auto;background:var(--surface)}
+table.tk{width:100%;border-collapse:collapse;font-size:13px}
+.tk th{background:var(--sunk);color:var(--mute);font-weight:500;text-align:left;padding:9px 12px;white-space:nowrap;font-size:12.5px}
+.tk td{padding:11px 12px;border-top:1px solid var(--line-2);white-space:nowrap;vertical-align:middle}
+.tk td.name{white-space:normal;min-width:190px}
+.tk td.tk-rcv{white-space:normal;min-width:110px;max-width:170px;color:var(--ink-2)}
+.tk td.last{white-space:normal;min-width:120px;max-width:180px}
+.tk td.name b{font-weight:600}
+.tk td.name small{display:block;font-size:12px;color:var(--mute)}
+.tk tr:hover td{background:var(--sunk)}
+.tk tr.off td:not(.keep){opacity:.5}
+.tk tr.fresh td{animation:rowflash 3.2s ease}
+@keyframes rowflash{0%,45%{background:var(--acc-soft)}100%{background:transparent}}
+.ttag{display:inline-flex;align-items:center;gap:5px;font-size:12px;border-radius:6px;padding:1px 8px;font-weight:600}
+.ttag.push{background:var(--acc-soft);color:var(--acc)}
+.ttag.sub{background:var(--vio-soft);color:var(--vio)}
+.ttag.rule{background:var(--down-soft);color:var(--down)}
+.ttag.smart{background:var(--warn-soft);color:var(--warn)}
+.origin{font-size:11px;border:1px solid var(--line);border-radius:4px;padding:0 5px;color:var(--mute);margin-left:6px;font-weight:400;vertical-align:1px}
+.origin.o-chat{color:var(--acc);border-color:var(--acc-line)}
+.newtag{font-size:10px;background:var(--acc);color:var(--acc-ink);border-radius:4px;padding:0 5px;margin-left:6px;vertical-align:2px}
+.dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:7px;vertical-align:1px}
+.k-ok{background:var(--up)}.k-alert{background:var(--down)}.k-quiet{background:var(--faint)}.k-none{background:var(--line)}.k-fix{background:var(--warn)}
+.last.fix{color:var(--warn)}
+.ops .lnk{margin-right:12px}
+.ops .lnk.del{color:var(--down)}
+.tk-empty{text-align:center!important;color:var(--mute);padding:36px!important;white-space:normal!important}
+
+.scrim{position:fixed;inset:0;background:rgba(12,16,40,.42);z-index:40;opacity:0;pointer-events:none;transition:opacity .2s}
+.scrim.show{opacity:1;pointer-events:auto}
+.drawer{position:fixed;top:0;right:0;bottom:0;background:var(--surface);z-index:41;transform:translateX(103%);transition:transform .3s cubic-bezier(.3,.7,.2,1);display:flex;flex-direction:column;box-shadow:var(--sh-2);padding-top:env(safe-area-inset-top,0px);padding-right:env(safe-area-inset-right,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.drawer.show{transform:none}
+.md{width:min(1060px,100%)}
+.sqld{width:min(580px,100%);z-index:46}
+.dr-h{display:flex;align-items:center;gap:10px;padding:14px 20px;border-bottom:1px solid var(--line-2)}
+.dr-h b{font-size:15px;font-weight:650}
+.md-b{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 400px}
+.md-form{overflow:auto;padding:20px 22px;display:flex;flex-direction:column;gap:20px}
+.md-pv{overflow:auto;background:var(--sunk);border-left:1px solid var(--line-2);padding:22px 20px;display:flex;flex-direction:column;gap:12px;align-items:stretch}
+.fld{display:flex;flex-direction:column;gap:8px}
+.fld>label,.fld>.fl{font-size:12.5px;color:var(--mute);font-weight:600;letter-spacing:.02em}
+.row2{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:12px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.dr-f{display:flex;align-items:center;gap:8px;padding:12px 20px;border-top:1px solid var(--line-2);flex-wrap:wrap}
+.sq-b{flex:1;overflow:auto;padding:18px 20px;display:flex;flex-direction:column;gap:14px}
+pre.sql{margin:0;background:var(--sunk);border:1px solid var(--line);border-radius:11px;padding:12px 14px;font:12.5px/1.7 var(--f-code);overflow-x:auto;white-space:pre}
+.u-sql .kw,pre.sql .kw{color:var(--d1);font-weight:600}
+.u-sql .str,pre.sql .str{color:var(--up)}
+.u-sql .var,pre.sql .var{background:var(--warn-soft);color:var(--warn);border-radius:3px}
+
+.blocker{position:fixed;inset:0;z-index:65;display:none;cursor:pointer}
+.blocker.on{display:block}
+.cursor{position:fixed;left:0;top:0;z-index:80;pointer-events:none;transition:transform .6s cubic-bezier(.4,.1,.2,1);display:none;filter:drop-shadow(0 2px 3px rgba(0,0,0,.3))}
+.cursor.on{display:block}
+.ripple{position:fixed;z-index:79;width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:50%;border:2px solid var(--acc);pointer-events:none;animation:rip .55s ease-out forwards}
+@keyframes rip{from{transform:scale(.3);opacity:1}to{transform:scale(1.4);opacity:0}}
+.ghost{position:fixed;left:0;top:0;z-index:78;pointer-events:none;background:var(--surface);border:1.5px solid var(--acc);border-radius:9px;padding:6px 12px;font-size:12.5px;box-shadow:var(--sh-2);white-space:nowrap}
+.spot{animation:spot 1.5s ease 2}
+@keyframes spot{0%,100%{box-shadow:0 0 0 0 transparent}50%{box-shadow:0 0 0 5px var(--acc-line)}}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(16px);background:var(--ink);color:var(--surface);padding:9px 16px;border-radius:10px;font-size:13px;opacity:0;transition:.2s;z-index:90;pointer-events:none;max-width:calc(100% - 32px)}
+.toast.show{opacity:1;transform:translateX(-50%)}
+
+@media (max-width:1180px){
+  .side{width:66px;padding:10px 5px}
+  .grp .lb,.grp .ar,.side .nb{display:none}
+  .grp{justify-content:center}
+  .sub{padding:7px 2px;justify-content:center;font-size:11.5px}
+  .md-b{grid-template-columns:minmax(0,1fr) 340px}
+}
+@media (max-width:900px){
+  .navlinks,.uname{display:none}
+  .side{display:none}
+  .view{margin:0;border-radius:0}
+  .tabs{padding:0 8px}
+  .chatpage.split .chat{flex-basis:100%;border-right:0}
+  .ws{position:fixed;inset:0;z-index:30;transform:translateY(102%);opacity:1;visibility:hidden;padding-top:env(safe-area-inset-top,0px)}
+  .chatpage.split.ws-open .ws{transform:none;visibility:visible}
+  .ws-close{display:inline-grid}
+  .chatpage.split .wsfab{display:inline-flex;position:absolute;right:max(16px,env(safe-area-inset-right,0px));bottom:150px;z-index:4;align-items:center;gap:6px;background:var(--acc);color:var(--acc-ink);border-radius:999px;padding:7px 14px;font-size:13px;font-weight:600;box-shadow:var(--sh-2)}
+  .starters{grid-template-columns:minmax(0,1fr)}
+  .md-b{grid-template-columns:minmax(0,1fr);overflow:auto}
+  .md-form,.md-pv{overflow:visible}
+  .md-pv{border-left:0;border-top:1px solid var(--line-2)}
+  .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .tasks{padding:18px 16px}
+  .demo{flex-wrap:wrap}
+  .demo .txt{order:3;flex-basis:100%}
+  .segs{order:4;width:100%}
+}
+@media (max-width:520px){
+  .types,.inits{grid-template-columns:minmax(0,1fr)}
+  .herotop h1{font-size:22px}
+  .thread,.composer{padding-left:12px;padding-right:12px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style></head><body>
+
+<div class="app">
+  <header class="nav">
+    <span class="logo"><i></i>DATA</span>
+    <div class="navlinks"><span>系统管理</span><span>CMDB</span><span>运维工单</span><span>查询系统</span><span>审批管理</span><span class="on">智能问数</span><span>更多</span></div>
+    <div class="right"><button class="demo-open" id="demoOpen" type="button">▶ 操作演示</button><span class="avatar">演</span><span class="uname">演示用户</span></div>
+  </header>
+  <div class="demo" id="demo">
+    <span class="badge num" id="demoStep">演示</span>
+    <div class="txt"><b id="demoTitle">操作演示</b><span id="demoDesc">马上开始，大约一分半</span></div>
+    <div class="segs" id="segs" aria-label="演示进度，点任意一段跳到那一步"></div>
+    <div class="dctl">
+      <button class="btn sm" id="dPlay" type="button">暂停</button>
+      <button class="btn sm" id="dSpeed" type="button">1×</button>
+      <button class="btn sm pri" id="dExit" type="button">自己操作</button>
+    </div>
+  </div>
+  <div class="frame">
+    <aside class="side" aria-label="菜单">
+      <div class="grp"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg><span class="lb">问数工作台</span><span class="ar">▲</span></div>
+      <button class="sub on" data-page="chat" id="menuChat" type="button">智能问数</button>
+      <button class="sub" data-page="tasks" id="menuTasks" type="button">定时任务<span class="nb">新</span></button>
+      <div class="grp"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span class="lb">分析与知识</span><span class="ar">▼</span></div>
+      <div class="grp"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v12c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12c0 1.7 3.1 3 7 3s7-1.3 7-3"/></svg><span class="lb">数据治理</span><span class="ar">▼</span></div>
+      <div class="grp"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/><path d="M11 7.5h3a3 3 0 0 1 3 3V13"/></svg><span class="lb">MCP管理</span><span class="ar">▼</span></div>
+      <div class="grp"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6l8-3z"/></svg><span class="lb">权限管理</span><span class="ar">▼</span></div>
+      <div class="grp"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg><span class="lb">审计中心</span><span class="ar">▼</span></div>
+      <div class="grp"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg><span class="lb">平台管理</span><span class="ar">▼</span></div>
+    </aside>
+    <main class="main">
+      <div class="tabs"><button class="on" data-page="chat" type="button">智能问数</button><button data-page="tasks" type="button">定时任务</button><button type="button">知识库</button></div>
+      <div class="view">
+        <section class="chatpage" id="chatpage">
+          <div class="chat hero" id="chat">
+            <div class="chead">
+              <button class="ib" id="btnHist" type="button" title="历史对话" aria-label="历史对话"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16M4 12h16M4 18h10"/></svg></button>
+              <button class="ib" id="btnNew" type="button" title="新对话" aria-label="新对话"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg></button>
+              <div class="projsel">当前项目 <button id="projTop" type="button">项目A ▾</button></div>
+            </div>
+            <div class="hist" id="hist" hidden>
+              <h4>历史对话</h4>
+              <button type="button">本周充值对比上周同期<small>项目A · 昨天</small></button>
+              <button type="button">上周充值波动主要来自哪些渠道<small>项目A · 11-14</small></button>
+              <button type="button">近30天付费率变化趋势<small>项目B · 11-12</small></button>
+              <button type="button">新用户 7 日留存按渠道拆分<small>项目A · 11-10</small></button>
+            </div>
+            <div class="thread" id="thread"><div class="thread-in" id="threadIn"></div></div>
+            <div class="composer"><div class="composer-in">
+              <div class="herotop"><h1>今天想看哪些数据？</h1><p>直接提问；想让数据按时发到飞书，或者帮你盯着指标，在「技能」里选「定时任务」。</p></div>
+              <div class="box">
+                <textarea id="q" rows="2" placeholder="请输入你的问题，回车发送，Shift+回车换行"></textarea>
+                <div class="boxbar">
+                  <span class="pill">Auto ▾</span>
+                  <span class="pill" id="projPill">▤ 项目A</span>
+                  <div class="skillwrap">
+                    <button class="pill" id="skillBtn" type="button">✦ 选择技能</button>
+                    <div class="skillmenu" id="skillMenu" hidden>
+                      <button type="button" data-skill="task"><span class="si"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6"/></svg></span><b>定时任务 <span class="nb">新</span></b><span class="d">按时把数据发到飞书，或者盯着指标</span></button>
+                      <button type="button" data-skill="doc"><span class="si"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/></svg></span><b>飞书文档</b><span class="d">把分析结论整理成文档</span></button>
+                      <button type="button" data-skill="attr"><span class="si"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M4 19h16M7 15l4-5 3 3 5-7"/></svg></span><b>归因分析</b><span class="d">指标变了，拆开看是哪里变的</span></button>
+                    </div>
+                  </div>
+                  <span class="pill on" id="skillChip" hidden><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2"/></svg>定时任务<button class="x" id="skillOff" type="button" aria-label="取消定时任务技能">×</button></span>
+                  <button class="send" id="send" type="button" aria-label="发送"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg></button>
+                </div>
+              </div>
+              <div class="outs">产出：<button class="out" type="button">飞书文档</button><button class="out" id="outTask" type="button">⏱ 定时任务 <span class="nb">新</span></button></div>
+              <div class="starters" id="starters"></div>
+            </div></div>
+            <button class="wsfab" id="wsFab" type="button">查看预期效果 ›</button>
+          </div>
+          <section class="ws" id="ws" aria-label="预期效果">
+            <div class="ws-h">
+              <input class="ws-name" id="wsName" aria-label="任务名称">
+              <span class="projchip" title="任务跟着这段对话的项目走，按这个项目的数据源执行">🔒 项目 <b id="wsProj">项目A</b> · 随对话带入</span>
+              <span class="status" id="wsStatus">草稿</span>
+              <button class="ib ws-close" id="wsClose" type="button" aria-label="收起">×</button>
+            </div>
+            <div class="ws-tabs" id="wsTabs"><button data-tab="card" type="button">飞书卡片预览</button><button data-tab="board" type="button">组件与 SQL</button><button data-tab="plan" type="button">运行计划</button></div>
+            <div class="ws-b" id="wsBody"></div>
+          </section>
+        </section>
+
+        <section class="tasks" id="tasksPage" hidden aria-label="定时任务">
+          <div class="tk-head">
+            <div><h2>定时任务</h2><p class="hint">到点自动取数、分析或检查，把结果发到飞书。可以手动建，也可以在智能问数里一句话建。</p></div>
+            <span class="sp"></span>
+            <button class="btn" id="tkChat" type="button">✦ 在问数里创建</button>
+            <button class="btn pri" id="tkNew" type="button">+ 新建任务</button>
+          </div>
+          <div class="merge" id="mergeNote"><span class="mi">i</span><div><b>原「订阅任务」已经并到这里。</b>订阅的问题显示为「问题订阅」，到点照旧重新分析；原来的订阅都保留，不用重建。</div><button class="ib" id="mergeClose" type="button" aria-label="关闭提示">×</button></div>
+          <div class="stats" id="tkStats"></div>
+          <div class="tk-bar">
+            <div class="seg" id="tkType"><button data-v="all" type="button">全部</button><button data-v="push" type="button">定时推送</button><button data-v="sub" type="button">问题订阅</button><button data-v="rule" type="button">常规监控</button><button data-v="smart" type="button">智能监控</button></div>
+            <span class="sp"></span>
+            <select class="in sel" id="tkProj" aria-label="按项目筛选"></select>
+            <input class="in" id="tkSearch" placeholder="搜索任务名称">
+          </div>
+          <div class="tbl"><table class="tk"><thead><tr><th>任务</th><th>类型</th><th>时间</th><th>下次</th><th>最近一次</th><th>发给</th><th>启用</th><th>操作</th></tr></thead><tbody id="tkBody"></tbody></table></div>
+        </section>
+      </div>
+    </main>
+  </div>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<aside class="drawer md" id="md" aria-label="新建定时任务">
+  <div class="dr-h"><b id="mdTitle">新建定时任务</b><span class="hint">和问数里建的是同一种任务，控件也一样</span><span class="sp"></span><button class="ib" id="mdClose" type="button" aria-label="关闭">×</button></div>
+  <div class="md-b">
+    <div class="md-form">
+      <div class="row2">
+        <div class="fld"><label for="mdName">任务名称</label><input class="in" id="mdName"></div>
+        <div class="fld"><label for="mdProj">项目</label><select class="in" id="mdProj"></select></div>
+      </div>
+      <div class="fld"><span class="fl">内容从哪来</span>
+        <div><div class="seg" id="mdSrc"><button data-v="sql" type="button">粘贴 SQL</button><button data-v="question" type="button">写一个问题</button></div></div>
+        <div id="mdSqlBox" class="fld">
+          <textarea class="in code" id="mdSql" rows="7" placeholder="SELECT …  日期可以写 ${biz_date}、${start_date}，到点自动换成当天"></textarea>
+          <div class="row"><button class="btn sm" id="mdTry" type="button">试跑</button><button class="lnk" id="mdSample" type="button">填入示例</button><span class="hint" id="mdTryRes"></span></div>
+        </div>
+        <div id="mdQBox" class="fld" hidden>
+          <textarea class="in" id="mdQuestion" rows="3" placeholder="例如：上周充值波动主要来自哪些渠道"></textarea>
+          <span class="hint">到点会把这个问题交给智能体重新分析，和原来的订阅任务一样。</span>
+        </div>
+      </div>
+      <div class="fld"><span class="fl">类型</span><div id="mdType"></div></div>
+      <div class="fld"><span class="fl">什么时候</span><div id="mdTime"></div></div>
+      <div class="fld"><span class="fl">发给谁</span><div id="mdRecv"></div></div>
+    </div>
+    <div class="md-pv" id="mdPreview"></div>
+  </div>
+  <div class="dr-f"><span class="hint" id="mdNext"></span><span class="sp"></span><button class="btn" id="mdTest" type="button">测试发送到我飞书</button><button class="btn pri" id="mdCreate" type="button">创建任务</button></div>
+</aside>
+<aside class="drawer sqld" id="sqld" aria-label="组件 SQL">
+  <div class="dr-h"><b id="sqTitle">SQL</b><span class="sp"></span><button class="btn sm" id="sqCopy" type="button">复制</button><button class="ib" id="sqClose" type="button" aria-label="关闭">×</button></div>
+  <div class="sq-b">
+    <dl class="kv" id="sqMeta"></dl>
+    <pre class="sql" id="sqCode"></pre>
+    <div class="note">到点直接跑这段 SQL，不再让模型重新取数，所以每次口径一致。黄色是日期变量：你贴的 SQL 里写死的日期，已经换成随执行日滚动的变量，并用原日期回放核对过结果一致。</div>
+  </div>
+</aside>
+<div class="blocker" id="blocker" title="点击暂停演示"></div>
+<div class="cursor" id="cursor" aria-hidden="true"><svg width="22" height="26" viewBox="0 0 22 26"><path d="M2 1 L2 21 L7.5 16 L11 24.5 L14.5 23 L11 14.8 L18.5 14.8 Z" fill="#151a2d" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg></div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(function(){
+'use strict';
+const $=(s,r)=>(r||document).querySelector(s), $$=(s,r)=>[...(r||document).querySelectorAll(s)];
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt=n=>Math.round(n).toLocaleString('en-US');
+const pad=n=>String(n).padStart(2,'0');
+const clone=o=>JSON.parse(JSON.stringify(o));
+let speed=1,userSpeed=1,ff=false;
+const later=(fn,ms)=>setTimeout(fn,ms/speed);
+const ME='演示用户';
+const PROJS=['项目A','项目B','项目C'];
+let PROJECT=PROJS[0];
+const NOW=new Date(2026,10,17,10,20);
+const WD='日一二三四五六';
+let tt;function toast(s){const t=$('#toast');t.textContent=s;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2600);}
+
+/* ---------- 示例数据 ---------- */
+const DAYS=['11-03','11-04','11-05','11-06','11-07','11-08','11-09','11-10','11-11','11-12','11-13','11-14','11-15','11-16'];
+const DAU=[57820,58410,59130,61240,63880,64210,58960,58120,57940,58730,60110,62450,59720,52310];
+const IOS=[8120,8180,8260,8410,8690,8720,8250,8160,8130,8210,8380,8590,8340,7490];
+const BASE=[58000,58600,59300,61500,63600,64000,59200,58300,58200,58900,60300,62200,60000,59600];
+const CH=[{n:'华为',dau:9820,prev:15640},{n:'小米',dau:10240,prev:10480},{n:'OPPO',dau:9110,prev:9330},{n:'vivo',dau:8760,prev:8920},{n:'iOS',dau:7490,prev:8340},{n:'官网',dau:6890,prev:7010}];
+const chg=c=>(c.dau-c.prev)/c.prev*100;
+const avg=a=>a.reduce((x,y)=>x+y,0)/a.length;
+const AVG7=avg(DAU.slice(7)),AVG7P=avg(DAU.slice(0,7));
+const DROP=(DAU[13]-DAU[12])/DAU[12]*100;
+const KPI={
+  dau:{v:fmt(DAU[13]),d:'▼ 12.4% 比前天',tone:'dn',spark:DAU},
+  avg7:{v:fmt(AVG7),d:'▼ '+Math.abs((AVG7-AVG7P)/AVG7P*100).toFixed(1)+'% 比前 7 天',tone:'dn',spark:DAU.map((v,i)=>avg(DAU.slice(Math.max(0,i-6),i+1)))},
+  worst:{v:'华为',d:'▼ 37.2%，占降幅 78.5%',tone:'dn'},
+  n10:{v:'2 个',d:'华为、iOS',tone:'wn'}
+};
+
+const SQL_PASTE=[
+"SELECT logdate                 AS 日期,",
+"       channel_name            AS 渠道,",
+"       COUNT(DISTINCT user_id) AS DAU",
+"FROM   dw.user_login_daily",
+"WHERE  game_id = 31",
+"  AND  logdate BETWEEN '2026-11-03' AND '2026-11-16'",
+"GROUP  BY logdate, channel_name",
+"ORDER  BY logdate;"].join('\n');
+const SQL_BASE=SQL_PASTE.replace("'2026-11-03' AND '2026-11-16'","'${start_date}' AND '${biz_date}'");
+const indent=s=>s.replace(/;\s*$/,'').split('\n').map(l=>'    '+l).join('\n');
+const W_SQL={
+  dau:"SELECT SUM(DAU) AS 昨日DAU\nFROM (\n{BASE}\n) t\nWHERE 日期 = '${biz_date}';",
+  avg7:"SELECT ROUND(SUM(DAU) / 7) AS 近7日均DAU\nFROM (\n{BASE}\n) t\nWHERE 日期 > DATE_SUB('${biz_date}', INTERVAL 7 DAY);",
+  worst:"WITH d AS (\n{BASE}\n)\nSELECT a.渠道,\n       ROUND((a.DAU - b.DAU) * 100.0 / b.DAU, 1) AS 环比\nFROM   d a\nJOIN   d b ON b.渠道 = a.渠道\n        AND b.日期 = DATE_SUB('${biz_date}', INTERVAL 1 DAY)\nWHERE  a.日期 = '${biz_date}'\nORDER  BY 环比\nLIMIT  1;",
+  n10:"WITH d AS (\n{BASE}\n)\nSELECT COUNT(*) AS 跌超10渠道数\nFROM   d a\nJOIN   d b ON b.渠道 = a.渠道\n        AND b.日期 = DATE_SUB('${biz_date}', INTERVAL 1 DAY)\nWHERE  a.日期 = '${biz_date}'\n  AND  (a.DAU - b.DAU) * 100.0 / b.DAU <= -10;",
+  trend:"SELECT 日期, SUM(DAU) AS DAU\nFROM (\n{BASE}\n) t\nGROUP BY 日期\nORDER BY 日期;",
+  channel:"WITH d AS (\n{BASE}\n)\nSELECT 渠道,\n       SUM(CASE WHEN 日期 = '${biz_date}' THEN DAU END) AS 昨日,\n       SUM(CASE WHEN 日期 = DATE_SUB('${biz_date}', INTERVAL 1 DAY) THEN DAU END) AS 前日\nFROM   d\nGROUP  BY 渠道\nORDER  BY 昨日 DESC;",
+  ios:"SELECT 日期, DAU\nFROM (\n{BASE}\n) t\nWHERE 渠道 = 'iOS'\nORDER BY 日期;"
+};
+const wsql=m=>W_SQL[m].replace('{BASE}',indent(SQL_BASE));
+const W0=[
+  {id:'k1',type:'kpi',m:'dau',title:'昨日 DAU',span:1},
+  {id:'k2',type:'kpi',m:'avg7',title:'近 7 天日均 DAU',span:1},
+  {id:'k3',type:'kpi',m:'worst',title:'降幅最大的渠道',span:1},
+  {id:'k4',type:'kpi',m:'n10',title:'跌超 10% 的渠道',span:1},
+  {id:'c1',type:'chart',m:'trend',chart:'area',title:'近 14 天 DAU',span:2},
+  {id:'c2',type:'chart',m:'channel',chart:'bar',title:'昨日分渠道 DAU（对比前天）',span:2},
+  {id:'t1',type:'table',m:'channel',title:'渠道明细',span:4}
+];
+
+function hl(sql){let s=esc(sql);
+  s=s.replace(/('[^'\n]*')/g,'<span class="str">$1</span>');
+  s=s.replace(/\b(SELECT|FROM|WHERE|AND|OR|GROUP|BY|ORDER|AS|COUNT|DISTINCT|SUM|AVG|BETWEEN|LEFT|JOIN|ON|CASE|WHEN|THEN|END|DATE_SUB|INTERVAL|DAY|ROUND|NULLIF|DESC|LIMIT|WITH|HAVING)\b/g,'<span class="kw">$1</span>');
+  return s.replace(/\$\{(\w+)\}/g,'<span class="var">${$1}</span>');}
+
+/* ---------- 时间 ---------- */
+function freqText(f){const t=pad(f.h)+':'+pad(f.m);
+  return {daily:'每天 '+t,workday:'工作日 '+t,weekly:'每周'+WD[f.dow]+' '+t,monthly:'每月 '+f.dom+' 日 '+t,hourly:'每小时整点'}[f.kind];}
+function nextRuns(f,n){const out=[],d=new Date(NOW);
+  if(f.kind==='hourly'){d.setMinutes(0,0,0);for(let i=0;i<n;i++){d.setHours(d.getHours()+1);out.push(new Date(d));}return out;}
+  d.setHours(f.h,f.m,0,0);
+  for(let i=0;i<420&&out.length<n;i++){const w=d.getDay();
+    const ok=d>NOW&&(f.kind==='daily'||(f.kind==='workday'&&w>0&&w<6)||(f.kind==='weekly'&&w===f.dow)||(f.kind==='monthly'&&d.getDate()===f.dom));
+    if(ok)out.push(new Date(d));d.setDate(d.getDate()+1);}
+  return out;}
+const fmtRun=d=>d?`${pad(d.getMonth()+1)}-${pad(d.getDate())} 周${WD[d.getDay()]} ${pad(d.getHours())}:${pad(d.getMinutes())}`:'—';
+const newF=()=>({kind:'daily',h:9,m:0,dow:1,dom:1});
+function parseFreq(s){
+  if(!s)return null;
+  if(/每小时|每个小时/.test(s))return {kind:'hourly',h:0,m:0,dow:1,dom:1};
+  let kind=null,dow=1,dom=1;
+  if(/工作日/.test(s))kind='workday';
+  const w=s.match(/每(?:周|星期)([一二三四五六日天])/);if(w){kind='weekly';dow=WD.indexOf(w[1]==='天'?'日':w[1]);}
+  const mo=s.match(/每月\s*(\d{1,2})\s*[号日]/);if(mo){kind='monthly';dom=Math.min(28,Math.max(1,+mo[1]));}
+  if(!kind&&/每天|每日|天天|每早|每晚/.test(s))kind='daily';
+  const tm=s.match(/(\d{1,2})\s*[点时:：]\s*(半|\d{1,2})?/);
+  if(!kind&&!tm)return null;
+  let h=tm?+tm[1]:9,m=tm&&tm[2]?(tm[2]==='半'?30:+tm[2]):0;
+  if(/下午|晚上|傍晚/.test(s)&&h<12)h+=12;
+  if(h>23||m>59)return null;
+  return {kind:kind||'daily',h,m,dow,dom};}
+
+/* ---------- 任务草稿 ---------- */
+const TYPES={push:{n:'定时推送',d:'到点跑 SQL，把数据发出去'},sub:{n:'问题订阅',d:'到点把问题重新分析一遍（原订阅任务）'},rule:{n:'常规监控',d:'自己定条件，命中了才发'},smart:{n:'智能监控',d:'自动学基线，异常才发并归因'}};
+const SV='width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"';
+const TICON={push:`<svg ${SV}><path d="M4 12l16-8-6 16-2.5-6.5L4 12z"/></svg>`,sub:`<svg ${SV}><path d="M20 11a8 8 0 0 0-14.5-4.5M4 4v4h4M4 13a8 8 0 0 0 14.5 4.5M20 20v-4h-4"/></svg>`,
+  rule:`<svg ${SV}><path d="M6 16v-5a6 6 0 1 1 12 0v5l1.5 2h-15L6 16zM10 21h4"/></svg>`,smart:`<svg ${SV}><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z"/></svg>`};
+const SENS={low:{s:3,n:0,l:'低'},mid:{s:2.5,n:1,l:'中'},high:{s:2,n:3,l:'高'}};
+function newDraft(o){return Object.assign({name:'',project:PROJECT,source:'sql',sql:SQL_BASE,question:'',type:'push',freq:newF(),recv:[{n:'我',g:false}],
+  rule:{metric:'dau',cmp:'dod',val:10,miss:'silent'},sens:'mid',style:'bi',ai:true,W:clone(W0),tried:true},o||{});}
+function ruleHit(d){const r=d.rule;let p,txt;
+  if(r.metric==='dau'){p=r.cmp==='dod'?DROP:(DAU[13]-DAU[6])/DAU[6]*100;txt='DAU 比'+(r.cmp==='dod'?'前天':'上周同日')+' '+p.toFixed(1)+'%';}
+  else{p=Math.min(...CH.map(chg));if(r.cmp!=='dod')p=p*1.04;txt='华为渠道 DAU 比'+(r.cmp==='dod'?'前天':'上周同日')+' '+p.toFixed(1)+'%';}
+  return {hit:p<=-r.val,p,txt};}
+const ruleText=r=>(r.metric==='dau'?'DAU':'任一渠道 DAU')+' 比'+(r.cmp==='dod'?'前天':'上周同日')+'跌超 '+r.val+'%';
+const smartHit=d=>2.8>=SENS[d.sens].s;
+function shortName(q){let s=(q||'').replace(/(每天|每日|每周.|每月\d+[号日]|工作日|每小时|每个小时)/g,'')
+  .replace(/(早上|上午|中午|下午|晚上)?\d{1,2}\s*[点时:：](半|\d{1,2})?分?/g,'').replace(/(帮我|给我|看一下|建个定时任务|定时|把)/g,'');
+  const p=s.split(/[，,。；;]/).map(x=>x.trim()).filter(Boolean);return ((p[0]||'').replace(/(发我|发给我|发到.*|就?提醒我)$/,'').slice(0,14))||'新任务';}
+
+/* ---------- 图表 ---------- */
+const charts=new Map();
+const ro=new ResizeObserver(es=>es.forEach(e=>{const c=charts.get(e.target);c&&c.resize();}));
+function gc(){charts.forEach((c,el)=>{if(!el.isConnected){ro.unobserve(el);c.dispose();charts.delete(el);}});}
+function tk(){const s=getComputedStyle(document.documentElement),g=k=>s.getPropertyValue(k).trim();
+  return {ink:g('--ink'),mute:g('--mute'),line:g('--line-2'),c1:g('--d1'),c2:g('--d2'),down:g('--down'),surface:g('--surface'),faint:g('--faint')};}
+function rgba(hex,a){const h=hex.replace('#','');if(h.length<6)return hex;return `rgba(${parseInt(h.slice(0,2),16)},${parseInt(h.slice(2,4),16)},${parseInt(h.slice(4,6),16)},${a})`;}
+function opt(m,type,compact){
+  const t=tk();
+  const ax={axisLine:{lineStyle:{color:t.line}},axisTick:{show:false},axisLabel:{color:t.mute,fontSize:compact?10:11}};
+  const kf=v=>v>=1000?(v/1000)+'k':v;
+  const grid={left:compact?34:46,right:compact?8:14,top:compact?10:18,bottom:compact?18:24};
+  if(m==='trend'||m==='ios'){const s=m==='ios'?IOS:DAU,isBar=type==='bar',col=m==='ios'?t.c2:t.c1;
+    return {animationDuration:450,grid,tooltip:{trigger:'axis'},
+      xAxis:{type:'category',data:DAYS,boundaryGap:isBar,...ax,axisLabel:{...ax.axisLabel,interval:compact?4:2}},
+      yAxis:{type:'value',scale:true,splitLine:{lineStyle:{color:t.line}},axisLabel:{color:t.mute,fontSize:10,formatter:kf}},
+      series:[{type:isBar?'bar':'line',data:s.map((v,i)=>i===13?{value:v,itemStyle:{color:t.down}}:v),smooth:.3,showSymbol:false,barMaxWidth:14,
+        lineStyle:{width:2,color:col},itemStyle:{color:col,borderRadius:[3,3,0,0]},
+        areaStyle:type==='area'?{color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:rgba(col,.26)},{offset:1,color:rgba(col,.02)}])}:undefined,
+        markPoint:isBar?undefined:{symbol:'circle',symbolSize:8,itemStyle:{color:t.down,borderColor:t.surface,borderWidth:2},label:{show:false},data:[{coord:[13,s[13]]}]}}]};}
+  if(m==='base'){const sig=2.5*2600,lo=BASE.map(b=>b-sig),band=BASE.map(()=>2*sig);
+    return {animationDuration:400,grid:{left:44,right:12,top:26,bottom:22},tooltip:{trigger:'axis'},
+      legend:{top:2,right:6,itemWidth:12,itemHeight:6,textStyle:{color:t.mute,fontSize:11},data:['实际 DAU','正常范围']},
+      xAxis:{type:'category',data:DAYS,...ax,axisLabel:{...ax.axisLabel,interval:3}},
+      yAxis:{type:'value',min:40000,splitLine:{lineStyle:{color:t.line}},axisLabel:{color:t.mute,fontSize:10,formatter:kf}},
+      series:[{type:'line',data:lo,stack:'b',lineStyle:{opacity:0},symbol:'none',silent:true,tooltip:{show:false}},
+        {name:'正常范围',type:'line',data:band,stack:'b',lineStyle:{opacity:0},symbol:'none',areaStyle:{color:rgba(t.c2,.18)},itemStyle:{color:t.c2},tooltip:{show:false}},
+        {name:'实际 DAU',type:'line',data:DAU,smooth:.3,showSymbol:false,lineStyle:{color:t.c1,width:2},itemStyle:{color:t.c1},
+         markPoint:{symbol:'pin',symbolSize:30,itemStyle:{color:t.down},label:{fontSize:9,formatter:'异常'},data:[{coord:[13,DAU[13]]}]}}]};}
+  const names=CH.map(c=>c.n),hz=type==='hbar';
+  const cat={type:'category',data:hz?[...names].reverse():names,...ax};
+  const val={type:'value',splitLine:{lineStyle:{color:t.line}},axisLabel:{color:t.mute,fontSize:10,formatter:kf}};
+  const pick=k=>hz?CH.map(c=>c[k]).reverse():CH.map(c=>c[k]);
+  return {animationDuration:450,grid:{...grid,left:hz?(compact?40:48):grid.left,top:compact?10:28},tooltip:{trigger:'axis'},
+    legend:compact?{show:false}:{top:0,right:0,itemWidth:10,itemHeight:8,textStyle:{color:t.mute,fontSize:11}},
+    xAxis:hz?val:cat,yAxis:hz?cat:val,
+    series:[{name:'前天',type:'bar',data:pick('prev'),barGap:'18%',barMaxWidth:12,itemStyle:{color:rgba(t.faint,.55),borderRadius:2}},
+            {name:'昨天',type:'bar',data:pick('dau'),barMaxWidth:12,itemStyle:{color:t.c1,borderRadius:2}}]};
+}
+function drawEl(el){let c=charts.get(el);if(!c){c=echarts.init(el,null,{renderer:'svg'});charts.set(el,c);ro.observe(el);}
+  c.setOption(opt(el.dataset.m,el.dataset.type,el.classList.contains('f-chart')),true);}
+function mountCharts(root){if(typeof echarts==='undefined')return;$$('[data-m]',root).forEach(drawEl);gc();}
+function spark(arr){const mn=Math.min(...arr),mx=Math.max(...arr),n=arr.length-1;
+  const pts=arr.map((v,i)=>`${(i/n*100).toFixed(1)},${(24-(v-mn)/(mx-mn||1)*20-2).toFixed(1)}`);
+  const [lx,ly]=pts[n].split(',');
+  return `<svg class="spark" viewBox="0 0 100 26" preserveAspectRatio="none" aria-hidden="true"><polyline points="${pts.join(' ')}" fill="none" stroke="var(--d1)" stroke-width="1.6" vector-effect="non-scaling-stroke"/><circle cx="${lx}" cy="${ly}" r="2.2" fill="var(--down)"/></svg>`;}
+
+/* ---------- 飞书卡片 ---------- */
+function phoneWrap(d,inner){const n=nextRuns(d.freq,1)[0];
+  return `<div class="phone"><div class="screen"><div class="fs-top"><span class="fs-back">‹</span><span class="fs-title"><b>智能问数助手</b><em>机器人</em></span></div><div class="fs-scroll"><div class="fs-time num">${fmtRun(n)}</div><div class="fs-row"><span class="fs-av">问</span>${inner}</div></div></div></div>`;}
+function cardHTML(d){
+  if(d.source==='sql'&&!d.tried)return phoneWrap(d,`<div class="fs-empty">填好 SQL、点「试跑」以后<br>这里显示飞书上收到的卡片</div>`);
+  if(d.source==='question'&&!d.question.trim())return phoneWrap(d,`<div class="fs-empty">写好问题以后<br>这里显示到点会收到的分析卡片</div>`);
+  const W=d.W||[],recv=d.recv.map(r=>r.n).join('、')||'还没选';
+  let tone='',title=d.name||'未命名任务',sub=TYPES[d.type].n+' · '+freqText(d.freq),alert='';
+  if(d.type==='rule'){const h=ruleHit(d);
+    if(!h.hit&&d.rule.miss==='silent')return phoneWrap(d,`<div class="fs-empty"><b>按昨天的数据，这次不会发</b><br>${esc(h.txt)}，没到「跌超 ${d.rule.val}%」</div>`);
+    if(h.hit){tone='red';title='⚠ '+title;sub='常规监控 · 条件命中';alert=`<div class="f-alert red"><b>${esc(ruleText(d.rule))}</b><div>实际：${esc(h.txt)}</div></div>`;}
+    else sub='常规监控 · 今天没命中，照常发日报';}
+  if(d.type==='smart'){
+    if(smartHit(d)){tone='orange';sub='智能监控 · 发现 1 个异常';alert=`<div class="f-alert orange"><b>DAU 低于基线 12.2%（偏离 2.8σ）</b><ul><li>渠道：华为 15,640 → 9,820，占降幅 78.5%</li><li>新老用户：新用户降 41%，老用户降 6%</li></ul></div>`;}
+    else sub='智能监控 · 各指标都在正常范围';}
+  if(d.type==='sub')tone='violet';
+  const head=`<div class="fh ${tone}"><div class="t">${esc(title)}</div><div class="s">${esc(sub)} · ${esc(d.project)} · 业务日期 11-16</div></div>`;
+  const ks=W.filter(w=>w.type==='kpi').slice(0,4),c=W.find(w=>w.type==='chart'),tb=W.find(w=>w.type==='table');
+  const chartB=c?`<div><div class="f-cap">${esc(c.title)}</div><div class="f-chart" data-m="${c.m}" data-type="${c.chart}"></div></div>`:'';
+  const ai=d.ai?`<div class="f-ai"><b>解读</b>　华为渠道单日少了 5,820 人，占全部降幅的 78.5%；iOS 降了 10.2%，其他渠道都在 3% 以内。</div>`:'';
+  let body='';
+  if(d.type==='sub'){
+    body=`<div class="f-q">问题：${esc(d.question||'近 14 天各渠道 DAU 怎么样，昨天的变化主要来自哪里？')}</div>
+      <div class="f-ai"><b>结论</b>　昨天 DAU 52,310，比前天少 12.4%。降幅八成来自华为渠道（15,640 → 9,820）；iOS 降了 10.2%，需要留意；其他渠道都在 3% 以内。</div>${chartB}
+      <div class="f-cap">到点会把问题重新分析一遍，结论按当天的数据写。</div>`;
+  }else{
+    const concl=`<div><b>DAU 52,310，比前天少 12.4%</b>，降幅主要在华为渠道。</div>`;
+    const worst=CH.slice().sort((a,b)=>chg(a)-chg(b));
+    const rows=list=>list.map(x=>`<tr><td>${x.n}</td><td class="num">${fmt(x.dau)}</td><td class="num ${chg(x)<-10?'dn':''}">${chg(x).toFixed(1)}%</td></tr>`).join('');
+    if(d.style==='brief')body=concl+ai;
+    else if(d.style==='table')body=concl+`<table class="f-t"><thead><tr><th>渠道</th><th>昨天</th><th>比前天</th></tr></thead><tbody>${rows(CH)}</tbody></table>`+ai;
+    else body=concl+(ks.length?`<div class="f-k">${ks.map(w=>{const k=KPI[w.m];return `<div><div class="l">${esc(w.title)}</div><div class="v num">${k.v}</div><div class="d ${k.tone}">${k.d}</div></div>`;}).join('')}</div>`:'')+chartB+
+      (tb?`<div><div class="f-cap">${esc(tb.title)} · 降幅前 3</div><table class="f-t"><thead><tr><th>渠道</th><th>昨天</th><th>比前天</th></tr></thead><tbody>${rows(worst.slice(0,3))}</tbody></table></div>`:'')+ai;
+  }
+  return phoneWrap(d,`<div class="fcard">${head}<div class="fb">${alert}${body}<div class="f-btns"><span class="p">打开移动端看板</span><span>追问原因</span><span>暂停任务</span></div><div class="f-foot">发给：${esc(recv)} · 按${ME}的数据权限执行</div></div></div>`);
+}
+
+/* ---------- 复用控件：时间 / 类型 / 接收人 ---------- */
+const KINDS=[['daily','每天'],['workday','工作日'],['weekly','每周'],['monthly','每月'],['hourly','每小时']];
+const TIMES=['07:30','08:00','09:00','09:30','10:00','18:00'];
+function timeWidget(root,get,onChange){
+  root.insertAdjacentHTML('beforeend',`<div class="tw">
+    <div><div class="seg">${KINDS.map(([k,n])=>`<button type="button" data-kind="${k}">${n}</button>`).join('')}</div></div>
+    <div class="chips tw-dow">${[1,2,3,4,5,6,0].map(i=>`<button type="button" class="chip" data-dow="${i}">周${WD[i]}</button>`).join('')}</div>
+    <div class="tw-dom"><select class="in sel" aria-label="每月几号">${Array.from({length:28},(_,i)=>`<option value="${i+1}">${i+1} 日</option>`).join('')}</select></div>
+    <div class="chips tw-times">${TIMES.map(t=>`<button type="button" class="chip time" data-time="${t}">${t}</button>`).join('')}<label class="tw-custom">自定义 <input type="time" class="in" aria-label="自定义时间"></label></div>
+    <input class="in tw-nl" placeholder="也可以直接说，如：每周一上午10点">
+    <div class="nexts"></div></div>`);
+  const w=root.lastElementChild;
+  const paint=()=>{const f=get().freq,t=pad(f.h)+':'+pad(f.m);
+    $$('[data-kind]',w).forEach(b=>b.classList.toggle('on',b.dataset.kind===f.kind));
+    $('.tw-dow',w).hidden=f.kind!=='weekly';$('.tw-dom',w).hidden=f.kind!=='monthly';$('.tw-times',w).hidden=f.kind==='hourly';
+    $$('[data-dow]',w).forEach(b=>b.classList.toggle('on',+b.dataset.dow===f.dow));
+    $('select',w).value=f.dom;
+    $$('[data-time]',w).forEach(b=>b.classList.toggle('on',b.dataset.time===t));
+    $('input[type=time]',w).value=t;
+    $('.nexts',w).innerHTML='接下来：'+nextRuns(f,3).map(d=>`<b class="num">${fmtRun(d)}</b>`).join('<span>·</span>');};
+  w.addEventListener('click',e=>{const b=e.target.closest('[data-kind],[data-dow],[data-time]');if(!b)return;const f=get().freq;
+    if(b.dataset.kind)f.kind=b.dataset.kind;
+    if(b.dataset.dow)f.dow=+b.dataset.dow;
+    if(b.dataset.time){const [h,m]=b.dataset.time.split(':');f.h=+h;f.m=+m;}
+    paint();onChange();});
+  $('select',w).addEventListener('change',e=>{get().freq.dom=+e.target.value;paint();onChange();});
+  $('input[type=time]',w).addEventListener('change',e=>{const [h,m]=(e.target.value||'09:00').split(':');Object.assign(get().freq,{h:+h,m:+m});paint();onChange();});
+  $('.tw-nl',w).addEventListener('input',e=>{const p=parseFreq(e.target.value);if(p){Object.assign(get().freq,p);paint();onChange();}});
+  paint();return paint;}
+function typeWidget(root,get,onChange,rec){
+  root.insertAdjacentHTML('beforeend',`<div class="tyw"><div class="types">${Object.entries(TYPES).map(([k,t])=>`<button type="button" class="type t-${k}" data-type="${k}"><span class="ti">${TICON[k]}</span><b>${t.n}</b><span>${t.d}</span>${k===rec?'<em class="rec">推荐</em>':''}</button>`).join('')}</div><div class="ty-x"></div></div>`);
+  const w=root.lastElementChild,x=$('.ty-x',w);
+  const paintEval=()=>{const d=get(),ev=$('.eval',x);if(!ev)return;
+    if(d.type==='rule'){const h=ruleHit(d);ev.className='eval '+(h.hit?'hit':'miss');ev.textContent=(h.hit?'按昨天的数据会命中：':'按昨天的数据不会命中：')+h.txt;}
+    if(d.type==='smart'){const s=SENS[d.sens];ev.className='eval';ev.innerHTML=`偏离基线超过 <b>${s.s}σ</b> 就告警 · 按近 30 天数据回放，会告警 <b>${s.n}</b> 次`;}};
+  const paintX=()=>{const d=get(),r=d.rule;
+    if(d.type==='push')x.innerHTML=`<div class="note">到点直接跑保存的 SQL，不经过模型，每次口径一致。</div>`;
+    if(d.type==='sub')x.innerHTML=`<div class="note">到点把${d.source==='sql'?'这段 SQL 的结果':'问题'}交给智能体重新分析，结论按当天数据写。原来的「订阅任务」就是这种。</div>`;
+    if(d.type==='rule')x.innerHTML=`<div class="rulef">当 <select class="in sel" data-rk="metric"><option value="dau" ${r.metric==='dau'?'selected':''}>DAU</option><option value="anych" ${r.metric==='anych'?'selected':''}>任一渠道 DAU</option></select>
+      比 <select class="in sel" data-rk="cmp"><option value="dod" ${r.cmp==='dod'?'selected':''}>前天</option><option value="wow" ${r.cmp==='wow'?'selected':''}>上周同日</option></select>
+      跌超 <input class="in num val" type="number" min="1" step="1" data-rk="val" value="${r.val}" aria-label="阈值"> % 时发</div>
+      <div class="rulef">没命中时 <span class="seg sm"><button type="button" data-miss="silent" class="${r.miss==='silent'?'on':''}">不发</button><button type="button" data-miss="brief" class="${r.miss==='brief'?'on':''}">照常发日报</button></span></div><div class="eval"></div>`;
+    if(d.type==='smart')x.innerHTML=`<div class="rulef">灵敏度 <span class="seg sm">${Object.keys(SENS).map(k=>`<button type="button" data-sens="${k}" class="${d.sens===k?'on':''}">${SENS[k].l}</button>`).join('')}</span></div><div class="eval"></div>`;
+    paintEval();};
+  const paint=()=>{const d=get();$$('[data-type]',w).forEach(b=>b.classList.toggle('on',b.dataset.type===d.type));paintX();};
+  w.addEventListener('click',e=>{const b=e.target.closest('[data-type],[data-sens],[data-miss]');if(!b)return;const d=get();
+    if(b.dataset.type){d.type=b.dataset.type;paint();}
+    if(b.dataset.sens){d.sens=b.dataset.sens;paintX();}
+    if(b.dataset.miss){d.rule.miss=b.dataset.miss;paintX();}
+    onChange();});
+  const onRk=e=>{const k=e.target.dataset.rk;if(!k)return;get().rule[k]=k==='val'?(+e.target.value||1):e.target.value;paintEval();onChange();};
+  w.addEventListener('input',onRk);w.addEventListener('change',onRk);
+  paint();return paint;}
+function recvWidget(root,get,onChange){
+  root.insertAdjacentHTML('beforeend',`<div class="rw"><div class="recv"></div><div class="rw-sug"><span class="hint">常用</span><span class="chips"></span></div><input class="in rw-in" placeholder="输入姓名或群名，回车添加（限本项目成员）"></div>`);
+  const w=root.lastElementChild;
+  const paint=()=>{const d=get(),names=d.recv.map(r=>r.n);
+    $('.recv',w).innerHTML=d.recv.map((r,i)=>`<span class="person ${r.g?'grp':''}"><span class="pa">${r.g?'群':esc(r.n.slice(0,1))}</span>${esc(r.n)}<button type="button" data-rm="${i}" aria-label="移除">×</button></span>`).join('')||'<span class="hint">还没选接收人</span>';
+    const sug=[{n:'我',g:0},{n:d.project+'运营群',g:1},{n:'数据组群',g:1},{n:'市场部群',g:1}].filter(s=>!names.includes(s.n));
+    $('.chips',w).innerHTML=sug.map(s=>`<button type="button" class="chip" data-add="${esc(s.n)}" data-g="${s.g}">+ ${esc(s.n)}</button>`).join('')||'<span class="hint">都加上了</span>';};
+  w.addEventListener('click',e=>{const a=e.target.closest('[data-add]'),r=e.target.closest('[data-rm]');const d=get();
+    if(a)d.recv.push({n:a.dataset.add,g:a.dataset.g==='1'});
+    if(r)d.recv.splice(+r.dataset.rm,1);
+    if(a||r){paint();onChange();}});
+  $('.rw-in',w).addEventListener('keydown',e=>{if(e.key!=='Enter')return;e.preventDefault();const v=e.target.value.trim();if(!v)return;get().recv.push({n:v,g:/群$/.test(v)});e.target.value='';paint();onChange();});
+  paint();return paint;}
+
+/* ---------- 右侧：预期效果 ---------- */
+let CD=null,flow=0,paints=[],wsTab='card',rafWS=0;
+const STYLES=[['bi','轻 BI','指标卡 + 图 + 表'],['table','表格','整张明细'],['brief','仅结论','几句话']];
+function thumb(k){if(k==='bi')return '<div class="thumb"><div class="k"><i></i><i></i></div><div class="c"></div></div>';
+  if(k==='table')return '<div class="thumb"><i></i><i></i><i></i><i></i></div>';return '<div class="thumb"><i style="width:90%"></i><i style="width:70%"></i></div>';}
+function compText(d){if(d.type==='sub')return '问题 + 分析结论 + 1 张图';
+  if(d.style==='brief')return '结论 + 解读';if(d.style==='table')return '结论 + 整张渠道表';
+  const k=d.W.filter(w=>w.type==='kpi').length;return `结论 + ${Math.min(k,4)} 个指标卡 + 1 张图 + 前 3 行表`;}
+function infoHTML(d){const n=nextRuns(d.freq,1)[0],always=d.type==='push'||d.type==='sub'||(d.type==='rule'&&d.rule.miss==='brief');
+  return `<div><div class="lbl">下一次${d.type==='push'||d.type==='sub'?'发送':'检查'}</div><div class="nx-v num">${fmtRun(n)}</div><div class="hint">${freqText(d.freq)}${always?'':' · 命中条件才发'}</div></div>
+  <dl class="kv"><dt>发给</dt><dd>${d.recv.map(r=>`<span class="mini-p">${esc(r.n)}</span>`).join('')||'<span class="hint">还没选</span>'}</dd>
+  <dt>数据</dt><dd>${d.source==='sql'?'你的 SQL · 试跑 84 行 · 日期用 <code>\${biz_date}</code>':'按问题重新取数，每次重新生成 SQL'}</dd>
+  <dt>执行身份</dt><dd>${ME} 的数据权限</dd><dt>卡片组成</dt><dd>${compText(d)}</dd></dl>
+  ${d.type==='sub'?'':`<div class="blk"><div class="lbl">卡片样式</div><div class="stylep">${STYLES.map(([k,n,s])=>`<button type="button" class="stb ${d.style===k?'on':''}" data-style="${k}">${thumb(k)}<b>${n}</b><small>${s}</small></button>`).join('')}</div></div>`}
+  <div class="tg"><button type="button" class="sw ${d.ai?'on':''}" data-ai aria-label="AI 解读"></button><span>AI 解读</span><span class="hint">2～3 句，数字只取自查询结果</span></div>`;}
+function widgetHTML(w){let inner='';
+  if(w.type==='kpi'){const k=KPI[w.m];inner=`<div class="kv-v num">${k.v}</div><div class="kv-d ${k.tone}">${k.d}</div>${k.spark?spark(k.spark):''}`;}
+  else if(w.type==='chart')inner=`<div class="chart" data-m="${w.m}" data-type="${w.chart}"></div>`;
+  else inner=`<div class="tw-x"><table class="dt"><thead><tr><th>渠道</th><th>昨天</th><th>前天</th><th>比前天</th></tr></thead><tbody>${CH.map(c=>`<tr><td>${c.n}</td><td class="num">${fmt(c.dau)}</td><td class="num">${fmt(c.prev)}</td><td class="num ${chg(c)<-10?'dn':''}">${chg(c).toFixed(1)}%</td></tr>`).join('')}</tbody></table></div>`;
+  return `<div class="bw" data-id="${w.id}" style="grid-column:span ${w.span};--span:${w.span}"><div class="h"><button class="grip" type="button" aria-label="拖动排序" title="拖动排序">⋮⋮</button><span class="t" title="${esc(w.title)}">${esc(w.title)}</span>
+    <span class="acts">${w.type==='chart'?'<button class="ib" type="button" data-act="type">图型</button>':''}<button class="ib" type="button" data-act="span">${w.span>=4?'半宽':'全宽'}</button><button class="ib" type="button" data-act="sql">SQL</button><button class="ib" type="button" data-act="del" aria-label="移除">×</button></span></div>${inner}</div>`;}
+function boardHTML(d){return `<div class="bd-head"><div><b>推送内容</b><div class="hint">每个组件存着自己的 SQL，都从你的 SQL 派生。拖动排序，卡片按这个顺序取组件。</div></div>
+  <div class="bd-add"><input class="in" id="bdAdd" placeholder="一句话加组件，如：加一个 iOS 渠道趋势"><button class="btn sm pri" id="bdAddBtn" type="button">添加</button></div></div>
+  <div class="board" id="board">${d.W.map(widgetHTML).join('')}</div>`;}
+function planHTML(d){const runs=nextRuns(d.freq,5),to=d.recv.map(r=>r.n).join('、');
+  const act={push:'跑 SQL 并发送',sub:'重新分析并发送',rule:d.rule.miss==='brief'?'检查，照常发':'检查，命中才发',smart:'和基线比，异常才发'}[d.type];
+  const flowS={push:[['换日期变量','${biz_date} 换成执行日的前一天'],['按'+ME+'的数据权限跑 SQL','和你在问数里看到的一致'],['确认数据已就绪','昨日分区没到就等'],['生成卡片和解读','解读里的数字只取自查询结果'],['发到飞书','发给 '+to]],
+    sub:[['取出订阅的问题',''],['智能体重新分析','和在问数里提问一样'],['生成结论卡片',''],['发到飞书','发给 '+to]],
+    rule:[['换日期变量，跑 SQL',''],['判断条件',ruleText(d.rule)],['命中：发告警卡','没命中：'+(d.rule.miss==='brief'?'照常发日报':'不发')]],
+    smart:[['跑 SQL',''],['和基线比较','近 4 周同一星期几，灵敏度 '+SENS[d.sens].l],['异常时按维度归因','渠道、新老用户'],['发告警卡','同一指标 6 小时内不重复']]}[d.type];
+  return `<div class="plan"><div><h3>接下来 5 次</h3><ul class="runs">${runs.map((r,i)=>`<li><span class="when num">${fmtRun(r)}</span>${i?'':'<span class="nx">下一次</span>'}<span class="act">${act}</span></li>`).join('')}</ul>
+    ${d.type==='smart'?'<div class="basechart" data-m="base" data-type="line"></div>':''}</div>
+    <div><h3>到点会做什么</h3><ol class="flow">${flowS.map(([a,b])=>`<li><span>${esc(a)}${b?`<small>${esc(b)}</small>`:''}</span></li>`).join('')}</ol>
+    <div class="fallback"><div><span>数据没就绪</span>每 10 分钟重试，最多 3 次，还没到就发一条“数据延迟”</div><div><span>SQL 报错</span>改为按问题重新分析并照常发出，同时提醒你修 SQL</div><div><span>连续失败 3 次</span>自动暂停，通知创建人</div></div></div></div>`;}
+function renderWS(){
+  const d=CD;if(!d)return;
+  if(document.activeElement!==$('#wsName'))$('#wsName').value=d.name;
+  $('#wsProj').textContent=d.project;
+  const st=$('#wsStatus');st.textContent=flow===2?'已创建 · 运行中':'草稿 · 还没创建';st.classList.toggle('live',flow===2);
+  $$('#wsTabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===wsTab));
+  const b=$('#wsBody'),y=b.scrollTop;
+  if(wsTab==='card')b.innerHTML=`<div class="pvgrid"><div>${cardHTML(d)}</div><div class="info">${infoHTML(d)}</div></div>`;
+  if(wsTab==='board')b.innerHTML=boardHTML(d);
+  if(wsTab==='plan')b.innerHTML=planHTML(d);
+  b.scrollTop=y;mountCharts(b);}
+function wsSoon(){cancelAnimationFrame(rafWS);rafWS=requestAnimationFrame(renderWS);}
+$('#wsTabs').addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(!b)return;wsTab=b.dataset.tab;$('#wsBody').scrollTop=0;renderWS();});
+$('#wsName').addEventListener('input',e=>{if(!CD)return;CD.name=e.target.value;onChatChange();});
+const wsb=$('#wsBody');
+let pop=null;const closePop=()=>{if(pop){pop.remove();pop=null;}};
+document.addEventListener('click',e=>{if(pop&&!pop.contains(e.target)&&!e.target.closest('[data-act="type"]'))closePop();});
+wsb.addEventListener('click',e=>{
+  const st=e.target.closest('[data-style]');if(st&&CD){CD.style=st.dataset.style;onChatChange();return;}
+  if(e.target.closest('[data-ai]')&&CD){CD.ai=!CD.ai;onChatChange();return;}
+  if(e.target.closest('#bdAddBtn')){addWidget();return;}
+  const a=e.target.closest('[data-act]');if(!a||!CD)return;const el=a.closest('.bw'),w=CD.W.find(x=>x.id===el.dataset.id);if(!w)return;
+  if(a.dataset.act==='sql')openSql(w.title,wsql(w.m));
+  if(a.dataset.act==='del'){CD.W=CD.W.filter(x=>x!==w);onChatChange();toast(`已移除「${w.title}」`);}
+  if(a.dataset.act==='span'){if(w.type==='kpi')w.span=w.span>=4?1:4;else w.span=w.span>=4?2:4;onChatChange();}
+  if(a.dataset.act==='type'){closePop();pop=document.createElement('div');pop.className='pop';
+    const opts=w.m==='channel'?[['bar','柱状图'],['hbar','条形图']]:[['area','面积图'],['line','折线图'],['bar','柱状图']];
+    pop.innerHTML=opts.map(([k,n])=>`<button type="button" data-t="${k}" class="${k===w.chart?'on':''}">${n}</button>`).join('');el.appendChild(pop);
+    pop.addEventListener('click',ev=>{const t=ev.target.closest('[data-t]');if(!t)return;w.chart=t.dataset.t;closePop();onChatChange();});}
+});
+wsb.addEventListener('keydown',e=>{if(e.target.id==='bdAdd'&&e.key==='Enter'){e.preventDefault();addWidget();}});
+function addWidget(text){const inp=$('#bdAdd');const t=(text||(inp&&inp.value)||'').trim();if(!t||!CD)return;
+  const isI=/ios|苹果/i.test(t);const w=isI?{id:'c'+Date.now(),type:'chart',m:'ios',chart:'line',title:'iOS 渠道近 14 天 DAU',span:2}:{id:'c'+Date.now(),type:'chart',m:'trend',chart:'bar',title:t.replace(/^(加|添加|再加)(一个)?/,'').slice(0,16)||'新组件',span:2};
+  CD.W.push(w);wsTab='board';onChatChange();toast(`已加上「${w.title}」：新写了一条 SQL，试跑通过`);
+  setTimeout(()=>{const el=$(`#board .bw[data-id="${w.id}"]`);if(el){el.classList.add('flash');el.scrollIntoView({block:'nearest',behavior:'smooth'});}},60);}
+let dragId=null;
+wsb.addEventListener('pointerdown',e=>{const g=e.target.closest('.grip');if(g)g.closest('.bw').draggable=true;});
+wsb.addEventListener('dragstart',e=>{const b=e.target.closest('.bw');if(!b)return;dragId=b.dataset.id;e.dataTransfer.setData('text/plain',dragId);e.dataTransfer.effectAllowed='move';setTimeout(()=>b.classList.add('dragging'));});
+wsb.addEventListener('dragend',e=>{const b=e.target.closest('.bw');if(b){b.classList.remove('dragging');b.draggable=false;}dragId=null;$$('.drop-l,.drop-r').forEach(x=>x.classList.remove('drop-l','drop-r'));});
+wsb.addEventListener('dragover',e=>{if(!dragId)return;e.preventDefault();$$('.drop-l,.drop-r').forEach(x=>x.classList.remove('drop-l','drop-r'));
+  const b=e.target.closest('.bw');if(!b||b.dataset.id===dragId)return;const r=b.getBoundingClientRect();b.classList.add(e.clientX>r.left+r.width/2?'drop-r':'drop-l');});
+wsb.addEventListener('drop',e=>{if(!dragId||!CD)return;e.preventDefault();const b=e.target.closest('.bw');if(!b||b.dataset.id===dragId)return;
+  const r=b.getBoundingClientRect();moveWidget(dragId,b.dataset.id,e.clientX>r.left+r.width/2);});
+function moveWidget(id,target,after){const i=CD.W.findIndex(x=>x.id===id);if(i<0)return;const w=CD.W.splice(i,1)[0];let j=CD.W.findIndex(x=>x.id===target);if(after)j++;CD.W.splice(j,0,w);onChatChange();
+  setTimeout(()=>{const el=$(`#board .bw[data-id="${id}"]`);el&&el.classList.add('flash');},60);}
+
+/* ---------- SQL 抽屉 ---------- */
+let curSql='';
+function openSql(title,sql,proj){curSql=sql;$('#sqTitle').textContent='SQL · '+title;$('#sqCode').innerHTML=hl(sql);
+  $('#sqMeta').innerHTML=`<dt>项目</dt><dd>${esc(proj||(CD&&CD.project)||PROJECT)}</dd><dt>执行身份</dt><dd>${ME} 的数据权限；只有创建人能看这段 SQL</dd><dt>日期变量</dt><dd><code>\${biz_date}</code> = 执行日前一天；<code>\${start_date}</code> = biz_date − 13 天</dd>`;
+  $('#sqld').classList.add('show');$('#scrim').classList.add('show');}
+function closeSql(){$('#sqld').classList.remove('show');if(!$('#md').classList.contains('show'))$('#scrim').classList.remove('show');}
+$('#sqClose').onclick=closeSql;
+$('#sqCopy').onclick=()=>{try{navigator.clipboard.writeText(curSql).then(()=>toast('已复制 SQL'),()=>toast('浏览器不让复制，请手动选中'));}catch(err){toast('浏览器不让复制，请手动选中');}};
+
+/* ---------- 对话 ---------- */
+const STARTERS=[
+  {t:'贴 SQL，定时发',d:'贴一段 SQL，说每天几点、发到哪',fill:()=>SQL_PASTE+'\n每天9点发到运营群',ic:TICON.push},
+  {t:'盯一个指标',d:'DAU 比前天跌超 10% 才提醒我',fill:()=>'每小时看一下 DAU，比前天跌超 10% 就提醒我',ic:TICON.rule},
+  {t:'订阅一个问题',d:'每周一把上周充值波动的原因发我',fill:()=>'每周一上午10点，把上周充值波动的原因分析发我',ic:TICON.sub}];
+$('#starters').innerHTML=STARTERS.map((s,i)=>`<button class="starter" type="button" data-start="${i}"><b>${s.ic}${s.t}</b><span>${s.d}</span></button>`).join('');
+$('#starters').addEventListener('click',e=>{const b=e.target.closest('[data-start]');if(!b)return;setSkill(true);$('#q').value=STARTERS[+b.dataset.start].fill();autoGrow();$('#q').focus();});
+let skillOn=false;
+function setSkill(on){skillOn=on;$('#skillChip').hidden=!on;$('#skillBtn').hidden=on;$('#outTask').classList.toggle('on',on);$('#skillMenu').hidden=true;
+  $('#q').placeholder=on?'贴 SQL 或说要看什么，再说什么时候发。例如：每天 9 点发到运营群':'请输入你的问题，回车发送，Shift+回车换行';}
+$('#skillBtn').onclick=e=>{e.stopPropagation();$('#skillMenu').hidden=!$('#skillMenu').hidden;};
+$('#skillMenu').addEventListener('click',e=>{const b=e.target.closest('[data-skill]');if(!b)return;
+  if(b.dataset.skill==='task'){setSkill(true);$('#q').focus();}else{$('#skillMenu').hidden=true;toast('原型里只做了「定时任务」技能');}});
+document.addEventListener('click',e=>{if(!e.target.closest('.skillwrap'))$('#skillMenu').hidden=true;if(!e.target.closest('#hist,#btnHist'))$('#hist').hidden=true;});
+$('#skillOff').onclick=()=>setSkill(false);
+$('#outTask').onclick=()=>{setSkill(!skillOn);if(skillOn)$('#q').focus();};
+function autoGrow(){const q=$('#q');q.style.height='auto';q.style.height=Math.min(q.scrollHeight,200)+'px';}
+$('#q').addEventListener('input',autoGrow);
+$('#q').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}});
+$('#send').onclick=()=>send();
+$('#btnHist').onclick=e=>{e.stopPropagation();$('#hist').hidden=!$('#hist').hidden;};
+$('#btnNew').onclick=()=>{newChat();toast('已开新对话');};
+$('#projTop').onclick=()=>{if(flow>0){toast(`这段对话的任务固定在「${CD.project}」；要换项目，请新建对话`);return;}
+  PROJECT=PROJS[(PROJS.indexOf(PROJECT)+1)%PROJS.length];$('#projTop').textContent=PROJECT+' ▾';$('#projPill').textContent='▤ '+PROJECT;toast(`当前项目切到「${PROJECT}」，新建的任务会建在这个项目下`);};
+$('#wsFab').onclick=()=>{$('#chatpage').classList.add('ws-open');renderWS();};
+$('#wsClose').onclick=()=>$('#chatpage').classList.remove('ws-open');
+
+const thread=$('#threadIn');
+function scrollT(){const t=$('#thread');requestAnimationFrame(()=>t.scrollTo({top:t.scrollHeight,behavior:ff?'auto':'smooth'}));}
+function addU(html){thread.insertAdjacentHTML('beforeend',`<div class="msg-u">${html}</div>`);scrollT();}
+function addA(html){const el=document.createElement('div');el.className='msg-a';el.innerHTML=`<span class="av">问</span><div class="a-body">${html}</div>`;thread.appendChild(el);scrollT();return $('.a-body',el);}
+function setHero(on){$('#chat').classList.toggle('hero',on);}
+function setSplit(on){$('#chatpage').classList.toggle('split',on);if(!on)$('#chatpage').classList.remove('ws-open');}
+function splitSQL(txt){const lines=txt.split('\n');const i=lines.findIndex(l=>/\bselect\b/i.test(l));if(i<0)return {sql:'',rest:txt.trim()};
+  let j=lines.findIndex((l,k)=>k>=i&&/;\s*$/.test(l));
+  if(j<0){j=i;while(j+1<lines.length&&/^\s*(from|where|and|or|group|order|having|limit|join|left|inner|on|union|select)\b|^\s{2,}\S|^\s*[\w.]+\s*(,|as\b)/i.test(lines[j+1]))j++;}
+  return {sql:lines.slice(i,j+1).join('\n'),rest:[...lines.slice(0,i),...lines.slice(j+1)].join(' ').trim()};}
+function onChatChange(){paints.forEach(p=>p.sum&&p.sum());syncTask();wsSoon();}
+function send(){
+  const raw=$('#q').value.trim();if(!raw)return;
+  $('#q').value='';autoGrow();
+  if(flow>0){followUp(raw);return;}
+  const isTask=skillOn||/定时|每天|每日|每周|工作日|每小时|每月|发我|发到|推送|订阅|提醒|监控|告警/.test(raw)||/\bselect\b[\s\S]*\bfrom\b/i.test(raw);
+  if(!isTask){setHero(false);addU(esc(raw));later(()=>addA('原型里只接了定时任务这条线。在「技能」里选「定时任务」，或者直接说“每天 9 点发我”。'),400);return;}
+  if(!skillOn){setSkill(true);toast('识别到你要建定时任务，已自动选上「定时任务」技能');}
+  startFlow(raw);}
+function startFlow(raw){
+  flow=1;const {sql,rest}=splitSQL(raw);const f=parseFreq(rest);
+  let type='push';
+  if(!sql&&/跌|涨|超过|低于|提醒|告警|监控/.test(rest))type=/智能|异常|自动/.test(rest)?'smart':'rule';
+  else if(!sql&&/分析|原因|为什么|怎么回事/.test(rest))type='sub';
+  CD=newDraft({project:PROJECT,source:sql?'sql':'question',question:sql?'':rest,type,freq:f||newF(),
+    name:PROJECT+' '+(sql?'渠道 DAU 日报':shortName(rest)+(type==='rule'||type==='smart'?' 监控':''))});
+  const pct=rest.match(/(\d+(?:\.\d+)?)\s*%/);if(pct)CD.rule.val=+pct[1];
+  CD.recog={freq:!!f,grp:/群/.test(rest)};
+  if(/运营群/.test(rest))CD.recv.push({n:PROJECT+'运营群',g:true});
+  if(/数据组/.test(rest))CD.recv.push({n:'数据组群',g:true});
+  addU((sql?`<pre class="u-sql">${hl(sql)}</pre>`:'')+(rest?`<div>${esc(rest)}</div>`:''));
+  setHero(false);later(()=>setSplit(true),200);
+  const a=addA('<ul class="steps"></ul>');const ul=$('.steps',a);
+  const tail=CD.recog.grp?'，接收人：运营群':'';
+  const steps=sql?['识别到要建定时任务','解析 SQL：3 列（日期、渠道、DAU），按日期和渠道分组',`在「${PROJECT}」试跑：返回 84 行，用时 0.8 秒`,'SQL 里写死了 11-03 ~ 11-16，已换成随执行日滚动的日期变量',(f?`识别到时间「${freqText(CD.freq)}」`:'没说时间，先按每天 09:00')+tail,'生成 7 个组件和飞书卡片预览']
+    :['识别到要建定时任务',`理解问题，生成取数 SQL（2 条），在「${PROJECT}」试跑通过`,(f?`识别到时间「${freqText(CD.freq)}」`:'没说时间，先按每天 09:00')+tail,type==='rule'?`识别到条件「${ruleText(CD.rule)}」`:type==='sub'?'这是要定期重新分析的问题，推荐「问题订阅」':'推荐「定时推送」','生成飞书卡片预览'];
+  let i=0;
+  const tick=()=>{const prev=ul.lastElementChild;if(prev)prev.classList.add('ok');
+    if(i<steps.length){ul.insertAdjacentHTML('beforeend',`<li><span class="ic">✓</span><span>${esc(steps[i])}</span></li>`);i++;scrollT();later(tick,420);}
+    else{wsTab='card';renderWS();
+      a.insertAdjacentHTML('beforeend',`<div>${sql?'SQL 试跑通过了':'取数没问题'}。右边是到点后飞书上会收到的样子，可以直接在上面改。还差三项，确认一下：</div>`);scrollT();
+      later(askTime,350);}};
+  tick();}
+function askCard(id,n,title,tag,mount,sum,next){
+  const a=addA(`<div class="ask" id="${id}"><div class="ask-h"><span class="ask-n">${n}</span><b>${title}</b>${tag?`<span class="ask-tag">${tag}</span>`:''}</div><div class="ask-b"></div>
+    <div class="ask-f"><span class="sp"></span><button class="btn pri sm" data-ok type="button">确认</button></div>
+    <div class="ask-done"><span class="okc">✓</span><span class="sum"></span><button class="lnk" data-reopen type="button">修改</button></div></div>`);
+  const card=$('.ask',a);const paint=mount($('.ask-b',card));paints.push(paint);
+  $('[data-ok]',card).onclick=()=>{$('.sum',card).innerHTML=sum();card.classList.add('done');if(!card.dataset.used){card.dataset.used='1';next&&later(next,380);}};
+  $('[data-reopen]',card).onclick=()=>card.classList.remove('done');
+  paint.sum=()=>{if(card.classList.contains('done'))$('.sum',card).innerHTML=sum();};
+  return card;}
+const chg2=()=>onChatChange();
+function askTime(){askCard('askTime','1 / 3','什么时候发？',CD.recog.freq?'已从你的话里识别':'',b=>timeWidget(b,()=>CD,chg2),()=>`发送时间：<b>${freqText(CD.freq)}</b> · 下次 ${fmtRun(nextRuns(CD.freq,1)[0])}`,askType);}
+function askType(){const rec=CD.type;askCard('askType','2 / 3','哪种任务？',CD.source==='sql'?'有 SQL，推荐定时推送':'按你的话推荐了一种',b=>typeWidget(b,()=>CD,chg2,rec),()=>`任务类型：<b>${TYPES[CD.type].n}</b>${CD.type==='rule'?' · '+esc(ruleText(CD.rule)):''}`,askRecv);}
+function askRecv(){askCard('askRecv','3 / 3','发给谁？',CD.recog.grp?'已识别：运营群':'',b=>recvWidget(b,()=>CD,chg2),()=>`发给：<b>${esc(CD.recv.map(r=>r.n).join('、'))}</b>`,askSum);}
+function askSum(){
+  const a=addA(`<div class="ask" id="askSum"><div class="ask-h"><b>都齐了，确认一下</b></div><div class="ask-b"><dl class="kv"></dl></div>
+    <div class="ask-f"><button class="btn sm" data-test type="button">测试发送到我飞书</button><span class="sp"></span><button class="btn pri" data-create type="button">创建任务</button></div></div>`);
+  const card=$('.ask',a);
+  const p=()=>{$('.kv',card).innerHTML=`<dt>名称</dt><dd>${esc(CD.name)}</dd><dt>项目</dt><dd>🔒 ${esc(CD.project)} · 随对话带入</dd><dt>类型</dt><dd>${TYPES[CD.type].n}</dd><dt>时间</dt><dd>${freqText(CD.freq)}</dd><dt>发给</dt><dd>${esc(CD.recv.map(r=>r.n).join('、'))}</dd><dt>内容</dt><dd>${CD.source==='sql'?`你的 SQL · ${CD.W.length} 个组件`:'按问题重新分析'}</dd>`;};
+  p.sum=p;paints.push(p);p();
+  $('[data-test]',card).onclick=()=>toast('已发到你的飞书（测试，不计入发送记录）');
+  $('[data-create]',card).onclick=()=>{createFromChat();$('.ask-f',card).outerHTML='<div class="ask-f"><span class="created">✓ 已创建，正在运行</span></div>';};}
+function createFromChat(){
+  if(flow===2)return;flow=2;const t=toTask(CD,'chat');TASKS.unshift(t);CD.taskId=t.id;renderWS();renderTasks();
+  toast(`已创建「${CD.name}」`);
+  const a=addA(`<div>已在「${esc(CD.project)}」下创建<b>「${esc(CD.name)}」</b>，下次${CD.type==='push'||CD.type==='sub'?'发送':'检查'}是 ${fmtRun(nextRuns(CD.freq,1)[0])}。<button class="lnk" data-goto="tasks" type="button">去「定时任务」查看 →</button></div>
+    <div class="ask" id="askInit"><div class="ask-h"><b>要不要接着配置一下？</b><span class="hint">都可以以后再改</span></div><div class="ask-b"><div class="inits">
+      <button class="init" type="button" data-init="rule"><b>${TICON.rule}加一个告警条件</b><span>跌超阈值才发，平时不打扰</span></button>
+      <button class="init" type="button" data-init="smart"><b>${TICON.smart}改成智能监控</b><span>自动学基线，异常才发并归因</span></button>
+      <button class="init" type="button" data-init="style"><b><svg ${SV}><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M4 10h16M10 10v10"/></svg>换卡片样式</b><span>轻 BI、表格或者只要结论</span></button>
+      <button class="init" type="button" data-init="test"><b>${TICON.push}现在发一次测试</b><span>发到你的飞书看看效果</span></button>
+    </div><div class="initArea"></div></div></div>`);
+  const card=$('#askInit',a),area=$('.initArea',card);
+  card.addEventListener('click',e=>{const b=e.target.closest('[data-init]');if(!b)return;$$('.init',card).forEach(x=>x.classList.toggle('picked',x===b));const k=b.dataset.init;
+    if(k==='test'){area.innerHTML='';toast('已发到你的飞书（测试，不计入发送记录）');later(()=>addA('测试卡片发出去了，你在飞书里看一眼效果。'),500);return;}
+    if(k==='style'){wsTab='card';area.innerHTML=`<div class="mini"><div class="stylep" id="initStyle">${STYLES.map(([s,n,x])=>`<button type="button" class="stb ${CD.style===s?'on':''}" data-st="${s}">${thumb(s)}<b>${n}</b><small>${x}</small></button>`).join('')}</div></div>`;
+      $('#initStyle').onclick=ev=>{const s=ev.target.closest('[data-st]');if(!s)return;CD.style=s.dataset.st;$$('#initStyle .stb').forEach(x=>x.classList.toggle('on',x===s));onChatChange();};renderWS();return;}
+    if(k==='rule'){area.innerHTML=`<div class="mini" id="ruleForm"><div class="rulef">当 <select class="in sel" data-rk="metric"><option value="dau">DAU</option><option value="anych">任一渠道 DAU</option></select> 比 <select class="in sel" data-rk="cmp"><option value="dod">前天</option><option value="wow">上周同日</option></select> 跌超 <input class="in num val" type="number" min="1" data-rk="val" value="${CD.rule.val}" aria-label="阈值"> % 才发</div><div class="eval"></div><div class="row"><span class="hint">没命中的日子不发</span><span class="sp"></span><button class="btn pri sm" data-save type="button">保存</button></div></div>`;
+      const f=$('#ruleForm'),pe=()=>{const h=ruleHit(CD);const ev=$('.eval',f);ev.className='eval '+(h.hit?'hit':'miss');ev.textContent=(h.hit?'按昨天的数据会命中：':'按昨天的数据不会命中：')+h.txt;};
+      const onR=ev=>{const k2=ev.target.dataset.rk;if(k2){CD.rule[k2]=k2==='val'?(+ev.target.value||1):ev.target.value;pe();}};
+      f.addEventListener('input',onR);f.addEventListener('change',onR);pe();
+      $('[data-save]',f).onclick=()=>{CD.type='rule';CD.rule.miss='silent';if(!/监控$/.test(CD.name)){CD.name=CD.name.replace(/日报$/,'')+'监控';}
+        wsTab='card';paints.forEach(p=>p());onChatChange();area.innerHTML='';
+        const h=ruleHit(CD);later(()=>addA(`已改成常规监控：${esc(ruleText(CD.rule))}才发。按昨天的数据试算，${h.hit?'<b class="dn">会触发告警</b>（'+esc(h.txt)+'），右边就是会收到的告警卡':'不会触发'}。`),400);};return;}
+    if(k==='smart'){CD.type='smart';wsTab='plan';paints.forEach(p=>p());onChatChange();area.innerHTML='';
+      later(()=>addA('已改成智能监控：用近 4 周同一星期几的数据建基线，偏离超过 2.5σ 才发，并按渠道、新老用户拆原因。右边「运行计划」里能看到基线。'),400);}
+  });}
+function followUp(raw){
+  addU(esc(raw));const did=[];
+  const f=parseFreq(raw);if(f){Object.assign(CD.freq,f);did.push('时间改成「'+freqText(CD.freq)+'」');}
+  const tm=raw.match(/(定时推送|问题订阅|常规监控|智能监控)/);if(tm){CD.type=Object.keys(TYPES).find(k=>TYPES[k].n===tm[1]);did.push('类型改成「'+tm[1]+'」');}
+  const g=raw.match(/(?:再?发给|再?发到|加上|抄送)\s*([^\s，,。]+)/);if(g&&!/^每/.test(g[1])){CD.recv.push({n:g[1],g:/群$/.test(g[1])});did.push('加上接收人「'+g[1]+'」');}
+  if(/柱/.test(raw)){const c=CD.W.find(w=>w.m==='trend');if(c){c.chart='bar';did.push('趋势图换成柱状图');}}
+  if(/加.*(ios|苹果)/i.test(raw)){addWidget('iOS');did.push('加了 iOS 渠道趋势');}
+  if(did.length){paints.forEach(p=>p());onChatChange();later(()=>addA(`好的，${did.join('，')}。右边已经更新${flow===2?'，任务也同步改了':''}。`),400);}
+  else later(()=>addA('原型里这句没接模型。可以试试：“改成每周一10点”“改成智能监控”“再发给数据组群”“趋势图换成柱状”。'),400);}
+function newChat(){thread.innerHTML='';CD=null;flow=0;paints=[];wsTab='card';setSplit(false);setHero(true);setSkill(false);$('#q').value='';autoGrow();$('#hist').hidden=true;$('#wsBody').innerHTML='';gc();}
+
+/* ---------- 定时任务页 ---------- */
+const F=(kind,h,m,dow)=>({kind,h,m,dow:dow==null?1:dow,dom:1});
+const TASKS0=[
+  {id:'t1',name:'项目A 充值日报',type:'push',project:'项目A',src:'SQL × 3',origin:'manual',freq:F('daily',9,0),recv:['我','项目A运营群'],last:{k:'ok',t:'今天 09:00 已发送'},on:true},
+  {id:'t2',name:'每日充值波动分析',type:'sub',project:'项目A',src:'问题',origin:'sub',freq:F('daily',8,30),recv:['我'],last:{k:'ok',t:'今天 08:30 已发送'},on:true},
+  {id:'t3',name:'核心渠道 DAU 监控',type:'rule',project:'项目A',src:'SQL × 2',origin:'chat',freq:F('hourly',0,0),recv:['我'],last:{k:'quiet',t:'10:00 没命中，没有发'},on:true},
+  {id:'t4',name:'付费指标智能监控',type:'smart',project:'项目A',src:'SQL × 3',origin:'chat',freq:F('daily',8,0),recv:['我','数据组群'],last:{k:'alert',t:'今天 08:00 告警：付费率低于基线'},on:true},
+  {id:'t5',name:'渠道成本日报',type:'push',project:'项目A',src:'SQL × 1',origin:'manual',freq:F('daily',7,30),recv:['我'],last:{k:'fix',t:'今天 07:30 SQL 报错，已改为重新分析并发出'},on:true},
+  {id:'t6',name:'新用户留存周报',type:'sub',project:'项目A',src:'问题',origin:'sub',freq:F('weekly',10,0,1),recv:['数据组群'],last:{k:'ok',t:'11-16 10:00 已发送'},on:false},
+  {id:'t7',name:'项目B 付费周报',type:'push',project:'项目B',src:'SQL × 2',origin:'manual',freq:F('weekly',9,0,1),recv:['我'],last:{k:'ok',t:'11-16 09:00 已发送'},on:true},
+  {id:'t8',name:'项目C 活跃日报',type:'sub',project:'项目C',src:'问题',origin:'sub',freq:F('daily',9,30),recv:['我'],last:{k:'ok',t:'今天 09:30 已发送'},on:true}];
+let TASKS=clone(TASKS0),tkType='all',seqT=100,page='chat';
+const ORIGIN={manual:'手动创建',chat:'问数创建',sub:'原订阅任务'};
+function toTask(d,origin){return {id:'n'+(++seqT),name:d.name||'未命名任务',type:d.type,project:d.project,src:d.source==='sql'?'SQL × 1':'问题',origin,freq:clone(d.freq),recv:d.recv.map(r=>r.n),last:{k:'none',t:'还没运行'},on:true,fresh:true,isNew:true,draft:clone(d)};}
+function syncTask(){if(!CD||!CD.taskId)return;const t=TASKS.find(x=>x.id===CD.taskId);if(!t)return;Object.assign(t,{name:CD.name,type:CD.type,freq:clone(CD.freq),recv:CD.recv.map(r=>r.n),draft:clone(CD)});}
+$('#tkProj').innerHTML='<option value="all">全部项目</option>'+PROJS.map(p=>`<option value="${p}">${p}</option>`).join('');$('#tkProj').value=PROJECT;
+function renderTasks(){
+  const pj=$('#tkProj').value,q=$('#tkSearch').value.trim();
+  const scope=TASKS.filter(t=>pj==='all'||t.project===pj);
+  const list=scope.filter(t=>(tkType==='all'||t.type===tkType)&&(!q||t.name.includes(q)));
+  const today=t=>/^今天/.test(t.last.t);
+  const nFix=scope.filter(t=>t.last.k==='fix').length;
+  $('#tkStats').innerHTML=`<div class="stat"><div class="l">运行中</div><div class="v num">${scope.filter(t=>t.on).length}</div><div class="s">共 ${scope.length} 个任务</div></div>
+    <div class="stat"><div class="l">今天已发送</div><div class="v num">${scope.filter(t=>today(t)&&t.last.k!=='quiet').length}</div><div class="s">${scope.filter(t=>t.last.k==='quiet').length} 个检查后没命中</div></div>
+    <div class="stat alert"><div class="l">今天告警</div><div class="v num">${scope.filter(t=>t.last.k==='alert').length}</div><div class="s">来自监控类任务</div></div>
+    <div class="stat ${nFix?'fix':''}"><div class="l">需要处理</div><div class="v num">${nFix}</div><div class="s">${nFix?'SQL 报错，已自动兜底':'没有异常'}</div></div>`;
+  $('#tkBody').innerHTML=list.length?list.map(t=>`<tr data-id="${t.id}" data-origin="${t.origin}" class="${t.fresh?'fresh':''} ${t.on?'':'off'}">
+    <td class="name"><b>${esc(t.name)}</b>${t.isNew?'<span class="newtag">新</span>':''}<small>${esc(t.project)} · ${esc(t.src)}<span class="origin ${t.origin==='chat'?'o-chat':''}">${ORIGIN[t.origin]}</span></small></td>
+    <td><span class="ttag ${t.type}">${TYPES[t.type].n}</span></td>
+    <td class="num">${freqText(t.freq)}</td>
+    <td class="num">${t.on?fmtRun(nextRuns(t.freq,1)[0]):'<span class="hint">已暂停</span>'}</td>
+    <td class="last ${t.last.k==='fix'?'fix':''}"><span class="dot k-${t.last.k}"></span>${esc(t.last.t)}</td>
+    <td class="tk-rcv">${esc(t.recv.slice(0,2).join('、'))}${t.recv.length>2?` 等 ${t.recv.length} 个`:''}</td>
+    <td class="keep"><button class="sw ${t.on?'on':''}" type="button" data-tk="tog" aria-label="启用"></button></td>
+    <td class="ops keep"><button class="lnk" type="button" data-tk="edit">${t.last.k==='fix'?'修 SQL':'编辑'}</button><button class="lnk" type="button" data-tk="run">立即运行</button><button class="lnk del" type="button" data-tk="del">删除</button></td></tr>`).join('')
+    :`<tr><td colspan="8" class="tk-empty">这里还没有任务。点「+ 新建任务」手动建，或者在智能问数里说一句“每天 9 点发我”。</td></tr>`;
+  if(page==='tasks')TASKS.forEach(t=>t.fresh=false);}
+function paintTkType(){$$('#tkType button').forEach(b=>b.classList.toggle('on',b.dataset.v===tkType));}
+$('#tkType').onclick=e=>{const b=e.target.closest('[data-v]');if(!b)return;tkType=b.dataset.v;paintTkType();renderTasks();};
+$('#tkProj').onchange=renderTasks;$('#tkSearch').addEventListener('input',renderTasks);
+$('#mergeClose').onclick=()=>{$('#mergeNote').hidden=true;};
+$('#tkBody').addEventListener('click',e=>{const b=e.target.closest('[data-tk]');if(!b)return;const t=TASKS.find(x=>x.id===b.closest('tr').dataset.id);if(!t)return;
+  const a=b.dataset.tk;
+  if(a==='tog'){t.on=!t.on;renderTasks();toast(t.on?`已启用「${t.name}」`:`已暂停「${t.name}」，到点不再执行`);}
+  if(a==='run'){const sent=t.type==='push'||t.type==='sub';t.last={k:sent?'ok':'quiet',t:'今天 '+pad(NOW.getHours())+':'+pad(NOW.getMinutes())+(sent?' 手动运行，已发送':' 手动运行，没命中')};renderTasks();toast(sent?'已按最新数据跑了一次，卡片发到了飞书':'已按最新数据检查了一次：没命中，没有发');}
+  if(a==='del'){TASKS=TASKS.filter(x=>x!==t);renderTasks();toast(`已删除「${t.name}」`);}
+  if(a==='edit')openMD(t);});
+$('#tkNew').onclick=()=>openMD();
+$('#tkChat').onclick=()=>{goPage('chat');if(flow===0){setSkill(true);$('#q').focus();}};
+function goPage(p){if(p===page)return;page=p;closePop();
+  $('#chatpage').hidden=p!=='chat';$('#tasksPage').hidden=p!=='tasks';
+  $$('[data-page]').forEach(el=>el.classList.toggle('on',el.dataset.page===p));
+  if(p==='tasks')renderTasks();if(p==='chat'&&CD)renderWS();}
+document.addEventListener('click',e=>{const g=e.target.closest('[data-goto],[data-page]');if(g)goPage(g.dataset.goto||g.dataset.page);});
+
+/* ---------- 手动新建 / 编辑 ---------- */
+let MD=null,mdEdit=null,mdNameTouched=false,rafMD=0;
+$('#mdProj').innerHTML=PROJS.map(p=>`<option>${p}</option>`).join('');
+function renderMD(){if(!MD)return;const pv=$('#mdPreview');pv.innerHTML=`<div class="lbl">飞书移动端预览</div>${cardHTML(MD)}`;mountCharts(pv);
+  $('#mdNext').textContent=`下次${MD.type==='push'||MD.type==='sub'?'发送':'检查'}：${fmtRun(nextRuns(MD.freq,1)[0])}`;}
+const mdSoon=()=>{cancelAnimationFrame(rafMD);rafMD=requestAnimationFrame(renderMD);};
+function paintSrc(){$$('#mdSrc button').forEach(b=>b.classList.toggle('on',b.dataset.v===MD.source));$('#mdSqlBox').hidden=MD.source!=='sql';$('#mdQBox').hidden=MD.source!=='question';}
+function openMD(t){
+  mdEdit=t||null;mdNameTouched=!!t;
+  const pj=$('#tkProj').value==='all'?PROJECT:$('#tkProj').value;
+  MD=t?(t.draft?clone(t.draft):newDraft({name:t.name,project:t.project,type:t.type,freq:clone(t.freq),recv:t.recv.map(n=>({n,g:/群$/.test(n)})),source:t.src==='问题'?'question':'sql',question:t.src==='问题'?t.name:'',tried:true}))
+    :newDraft({name:pj+' 新建任务',project:pj,source:'sql',sql:'',tried:false});
+  $('#mdTitle').textContent=t?'编辑定时任务':'新建定时任务';$('#mdCreate').textContent=t?'保存修改':'创建任务';
+  $('#mdName').value=MD.name;$('#mdProj').value=MD.project;$('#mdSql').value=MD.source==='sql'&&t?SQL_BASE:'';$('#mdQuestion').value=MD.question;
+  $('#mdTryRes').textContent=MD.tried&&MD.source==='sql'&&t?'✓ 试跑通过：84 行 × 3 列':'';
+  paintSrc();
+  ['#mdType','#mdTime','#mdRecv'].forEach(s=>$(s).innerHTML='');
+  typeWidget($('#mdType'),()=>MD,mdSoon,MD.source==='sql'?'push':'sub');timeWidget($('#mdTime'),()=>MD,mdSoon);recvWidget($('#mdRecv'),()=>MD,mdSoon);
+  renderMD();$('#md').classList.add('show');$('#scrim').classList.add('show');$('.md-form').scrollTop=0;}
+function closeMD(){$('#md').classList.remove('show');if(!$('#sqld').classList.contains('show'))$('#scrim').classList.remove('show');}
+$('#mdClose').onclick=closeMD;
+$('#scrim').onclick=()=>{closeSql();closeMD();$('#scrim').classList.remove('show');};
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){if($('#sqld').classList.contains('show'))closeSql();else closeMD();}});
+$('#mdSrc').onclick=e=>{const b=e.target.closest('[data-v]');if(!b)return;MD.source=b.dataset.v;if(MD.source==='question'&&MD.type==='push')MD.type='sub';
+  $('#mdType').innerHTML='';typeWidget($('#mdType'),()=>MD,mdSoon,MD.source==='sql'?'push':'sub');paintSrc();renderMD();};
+$('#mdName').addEventListener('input',e=>{MD.name=e.target.value;mdNameTouched=true;mdSoon();});
+$('#mdProj').onchange=e=>{const old=MD.project;MD.project=e.target.value;if(MD.name.startsWith(old)){MD.name=MD.project+MD.name.slice(old.length);$('#mdName').value=MD.name;}
+  $('#mdRecv').innerHTML='';recvWidget($('#mdRecv'),()=>MD,mdSoon);mdSoon();toast(`任务改到「${MD.project}」下，SQL 按这个项目的数据源执行`);};
+$('#mdSql').addEventListener('input',()=>{MD.tried=false;$('#mdTryRes').textContent='改过了，需要重新试跑';mdSoon();});
+$('#mdSample').onclick=()=>{$('#mdSql').value=SQL_PASTE;MD.tried=false;$('#mdTryRes').textContent='';};
+$('#mdTry').onclick=()=>{const s=$('#mdSql').value.trim();if(!/\bselect\b[\s\S]*\bfrom\b/i.test(s)){$('#mdTryRes').textContent='先写一段 SELECT 语句';return;}
+  const b=$('#mdTry');b.disabled=true;b.textContent='试跑中…';
+  later(()=>{b.disabled=false;b.textContent='试跑';if(s!==$('#mdSql').value.trim())return;
+    MD.tried=true;MD.sql=s.replace(/'2026-11-03' AND '2026-11-16'/,"'${start_date}' AND '${biz_date}'");
+    $('#mdSql').value=MD.sql;$('#mdTryRes').textContent='✓ 试跑通过：84 行 × 3 列，写死的日期已换成变量';
+    if(!mdNameTouched){MD.name=MD.project+' 渠道 DAU 日报';$('#mdName').value=MD.name;}renderMD();},900);};
+$('#mdQuestion').addEventListener('input',e=>{MD.question=e.target.value;if(!mdNameTouched){MD.name=MD.project+' '+shortName(MD.question);$('#mdName').value=MD.name;}mdSoon();});
+$('#mdTest').onclick=()=>toast('已发到你的飞书（测试，不计入发送记录）');
+$('#mdCreate').onclick=()=>{
+  if(MD.source==='sql'&&!MD.tried){$('#mdTryRes').textContent='创建前先试跑一下 SQL';toast('先试跑 SQL，确认能跑通');return;}
+  if(MD.source==='question'&&!MD.question.trim()){toast('先写一个问题');$('#mdQuestion').focus();return;}
+  if(!MD.recv.length){toast('至少选一个接收人');return;}
+  if(mdEdit){Object.assign(mdEdit,{name:MD.name,type:MD.type,project:MD.project,freq:clone(MD.freq),recv:MD.recv.map(r=>r.n),draft:clone(MD),fresh:true});toast(`已保存「${MD.name}」`);}
+  else{const t=toTask(MD,'manual');TASKS.unshift(t);if($('#tkProj').value!=='all')$('#tkProj').value=MD.project;toast(`已创建「${MD.name}」`);}
+  closeMD();tkType='all';paintTkType();renderTasks();};
+
+/* ---------- 操作演示 ---------- */
+let runTok=0,paused=false,playing=false,curStep=-1;
+const ABORT={abort:1};
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+async function wait(ms,tk){if(ff){await sleep(ms/25);if(tk!==runTok)throw ABORT;return;}
+  let t=0;while(t<ms){if(tk!==runTok)throw ABORT;if(paused){await sleep(100);continue;}await sleep(50);t+=50*speed;}if(tk!==runTok)throw ABORT;}
+async function need(sel,tk){if(typeof sel!=='string')return sel;let el=$(sel),t=0;while(!el&&t<8000){if(tk!==runTok)throw ABORT;await sleep(60);t+=60;el=$(sel);}return el;}
+const cur=$('#cursor');let cx=innerWidth*.55,cy=innerHeight*.5;
+function place(dur){cur.style.transitionDuration=(dur/speed)+'s';cur.style.transform=`translate(${cx}px,${cy}px)`;}
+async function moveTo(sel,tk,dx,dy){const el=await need(sel,tk);if(!el)return null;if(ff){if(tk!==runTok)throw ABORT;return el;}
+  el.scrollIntoView({block:'nearest',inline:'nearest',behavior:'smooth'});await wait(400,tk);
+  const r=el.getBoundingClientRect();cx=r.left+(dx!=null?dx:Math.min(r.width/2,150));cy=r.top+(dy!=null?dy:Math.min(r.height/2,60));place(.6);await wait(650,tk);return el;}
+function ripple(){if(ff)return;const d=document.createElement('div');d.className='ripple';d.style.left=cx+'px';d.style.top=cy+'px';document.body.appendChild(d);setTimeout(()=>d.remove(),600);}
+async function tap(sel,tk){const el=await moveTo(sel,tk);if(!el)return;ripple();await wait(140,tk);el.click();await wait(320,tk);}
+async function typeIn(sel,text,tk,append){const el=await moveTo(sel,tk);if(!el)return;ripple();el.focus({preventScroll:true});if(!append)el.value='';
+  if(ff){el.value+=text;el.dispatchEvent(new Event('input',{bubbles:true}));return;}
+  for(const ch of text){el.value+=ch;el.dispatchEvent(new Event('input',{bubbles:true}));await wait(55,tk);}await wait(250,tk);}
+function spot(el){if(!el||ff)return;el.classList.remove('spot');void el.offsetWidth;el.classList.add('spot');setTimeout(()=>el.classList.remove('spot'),3200);}
+function cleanupDemo(){$$('.ghost,.ripple').forEach(x=>x.remove());$$('.dragging,.drop-l,.drop-r').forEach(x=>x.classList.remove('dragging','drop-l','drop-r'));}
+async function ghostDrag(srcSel,dstSel,label,tk){
+  const src=await moveTo(srcSel,tk),dst=await need(dstSel,tk);if(!src||!dst)return;ripple();
+  const g=document.createElement('div');g.className='ghost';g.textContent=label;g.style.transition='none';g.style.transform=`translate(${cx+10}px,${cy+10}px)`;document.body.appendChild(g);
+  const bw=src.closest('.bw');bw&&bw.classList.add('dragging');await wait(300,tk);
+  const t=dst.getBoundingClientRect();cx=t.left+18;cy=t.top+Math.min(t.height/2,80);
+  g.style.transition=`transform ${0.9/speed}s cubic-bezier(.4,.1,.2,1)`;place(.9);g.style.transform=`translate(${cx+10}px,${cy+10}px)`;
+  await wait(950,tk);dst.classList.add('drop-l');await wait(450,tk);g.remove();bw&&bw.classList.remove('dragging');dst.classList.remove('drop-l');ripple();}
+function resetAll(){closeSql();closeMD();closePop();page='';goPage('chat');newChat();PROJECT=PROJS[0];$('#projTop').textContent=PROJECT+' ▾';$('#projPill').textContent='▤ '+PROJECT;
+  TASKS=clone(TASKS0);tkType='all';paintTkType();$('#tkProj').value=PROJECT;$('#tkSearch').value='';$('#mergeNote').hidden=false;renderTasks();cleanupDemo();}
+const STEPS=[
+ {t:'问数默认居中',d:'没开始问之前，输入框在页面中间。先在「技能」里选上「定时任务」。',run:async tk=>{
+   await wait(700,tk);await tap('#skillBtn',tk);await wait(500,tk);await tap('#skillMenu [data-skill="task"]',tk);await wait(800,tk);}},
+ {t:'贴一段 SQL，说什么时候发',d:'直接粘贴 SQL，再补一句“每天 9 点发到运营群”。SQL、时间和接收群都会被识别出来。',run:async tk=>{
+   const q=await moveTo('#q',tk);ripple();q.focus({preventScroll:true});q.value=SQL_PASTE+'\n';autoGrow();await wait(700,tk);
+   await typeIn('#q','帮我建个定时任务，每天9点发到运营群',tk,true);await tap('#send',tk);await wait(500,tk);}},
+ {t:'对话移到左边，右边是预期效果',d:'开始问以后对话收到左栏，右边留出大块地方，实时显示到点后飞书上收到的卡片。',run:async tk=>{
+   await need('#askTime',tk);await wait(600,tk);await moveTo('#wsBody .phone',tk,180,140);await wait(2200,tk);}},
+ {t:'用控件确认发送时间',d:'时间已从你的话里识别好，也可以点着改。这里改成工作日 09:30，下面马上算出接下来三次。',run:async tk=>{
+   await tap('#askTime [data-kind="workday"]',tk);await tap('#askTime [data-time="09:30"]',tk);await moveTo('#askTime .nexts',tk);await wait(1200,tk);await tap('#askTime [data-ok]',tk);await wait(500,tk);}},
+ {t:'选任务类型',d:'四种：定时推送、问题订阅（原订阅任务）、常规监控、智能监控。有 SQL 时推荐定时推送。',run:async tk=>{
+   await moveTo('#askType [data-type="sub"]',tk);await wait(700,tk);await moveTo('#askType [data-type="rule"]',tk);await wait(700,tk);
+   await tap('#askType [data-type="push"]',tk);await wait(400,tk);await tap('#askType [data-ok]',tk);await wait(500,tk);}},
+ {t:'确认接收人',d:'已识别出「运营群」，再点一下常用里的「数据组群」。',run:async tk=>{
+   await tap('#askRecv [data-add="数据组群"]',tk);await wait(600,tk);await tap('#askRecv [data-ok]',tk);await need('#askSum',tk);await wait(700,tk);}},
+ {t:'每个组件都存着 SQL',d:'切到「组件与 SQL」：拖动排序，卡片按这个顺序取组件；点「SQL」能看到从你的 SQL 派生出来的语句。',run:async tk=>{
+   await tap('#wsTabs [data-tab="board"]',tk);await wait(700,tk);
+   await ghostDrag('#board .bw[data-id="c2"] .grip','#board .bw[data-id="c1"]','⋮⋮ 昨日分渠道 DAU',tk);moveWidget('c2','c1',false);await wait(900,tk);
+   await tap('#board .bw[data-id="k1"] [data-act="sql"]',tk);await wait(2800,tk);await tap('#sqClose',tk);await wait(300,tk);}},
+ {t:'创建任务',d:'确认无误，点「创建任务」。',run:async tk=>{
+   await tap('#wsTabs [data-tab="card"]',tk);await tap('#askSum [data-create]',tk);await wait(1200,tk);}},
+ {t:'创建后接着配置',d:'创建完给几个常用选项。这里加一个告警条件：DAU 比前天跌超 10% 才发，右边马上变成告警卡。',run:async tk=>{
+   await tap('#askInit [data-init="rule"]',tk);await wait(600,tk);await moveTo('#ruleForm .eval',tk);await wait(900,tk);
+   await tap('#ruleForm [data-save]',tk);await wait(1200,tk);await moveTo('#wsBody .phone',tk,180,120);await wait(1500,tk);
+   await tap('#wsTabs [data-tab="plan"]',tk);await wait(2200,tk);}},
+ {t:'在「定时任务」页查看',d:'问数工作台新增「定时任务」，原「订阅任务」也并在这里，显示为「问题订阅」。刚建的任务排在最上面。',run:async tk=>{
+   await tap('#menuTasks',tk);await wait(800,tk);await moveTo('#tkBody tr td.name',tk);await wait(1500,tk);
+   spot($('#mergeNote'));await moveTo('#tkBody tr[data-origin="sub"] .ttag',tk);await wait(2000,tk);}},
+ {t:'也可以手动新建',d:'不经过对话也能建：同一套控件，选内容来源、类型、时间和接收人，右边一样实时预览。',run:async tk=>{
+   await tap('#tkNew',tk);await wait(800,tk);await tap('#mdSrc [data-v="question"]',tk);
+   await typeIn('#mdQuestion','上周充值波动主要来自哪些渠道',tk);await tap('#mdTime [data-kind="weekly"]',tk);
+   await moveTo('#mdPreview .phone',tk,170,160);await wait(1800,tk);await tap('#mdCreate',tk);await wait(700,tk);await moveTo('#tkBody tr td.name',tk);await wait(2200,tk);}}
+];
+const N=STEPS.length;
+const segs=$('#segs');
+segs.innerHTML=STEPS.map((s,i)=>`<button type="button" data-s="${i}" title="${i+1}. ${esc(s.t)}" aria-label="跳到第 ${i+1} 步：${esc(s.t)}"><i></i></button>`).join('');
+segs.onclick=e=>{const b=e.target.closest('[data-s]');if(b)play(+b.dataset.s);};
+function cap(i,title,desc){curStep=i;$('#demoStep').textContent=i<N?`${i+1} / ${N}`:'完成';$('#demoTitle').textContent=title;$('#demoDesc').textContent=desc;
+  [...segs.children].forEach((b,k)=>{b.classList.toggle('done',k<i);b.classList.toggle('cur',k===i);});}
+function setUI(){$('#blocker').classList.toggle('on',playing);cur.classList.toggle('on',playing&&!ff);$('#dPlay').hidden=!playing;$('#dPlay').textContent=paused?'继续':'暂停';$('#dSpeed').textContent=userSpeed+'×';}
+async function play(from){
+  from=from||0;const tk=++runTok;paused=false;playing=true;ff=false;speed=userSpeed;$('#demo').hidden=false;cleanupDemo();place(0);
+  try{resetAll();
+    if(from>0){ff=true;speed=25;setUI();cap(from,`正在跳到第 ${from+1} 步…`,'前面几步在后台快速走完');
+      for(let i=0;i<from;i++)await STEPS[i].run(tk);
+      ff=false;speed=userSpeed;cleanupDemo();await sleep(150);}
+    setUI();
+    for(let i=from;i<N;i++){cap(i,STEPS[i].t,STEPS[i].d);await STEPS[i].run(tk);}
+    cap(N,'演示结束','点进度条任意一段可以回到那一步；或者点「自己操作」，从这里接着点。');
+  }catch(e){if(e!==ABORT)console.error(e);}
+  finally{if(tk===runTok){ff=false;speed=userSpeed;playing=false;setUI();}}}
+function stopDemo(){runTok++;playing=false;paused=false;ff=false;speed=userSpeed;cleanupDemo();setUI();}
+function togglePause(){if(!playing||ff)return;paused=!paused;setUI();$('#demoTitle').textContent=(paused?'已暂停 · ':'')+STEPS[curStep].t;}
+$('#dPlay').onclick=togglePause;$('#blocker').onclick=togglePause;
+$('#dSpeed').onclick=()=>{userSpeed=userSpeed===1?2:1;if(!ff)speed=userSpeed;setUI();};
+$('#dExit').onclick=()=>{stopDemo();$('#demo').hidden=true;toast('现在可以自己操作了；顶栏「操作演示」可以重新看');};
+$('#demoOpen').onclick=()=>play(0);
+
+function redraw(){if(CD&&page==='chat')renderWS();if($('#md').classList.contains('show'))renderMD();}
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',redraw);
+new MutationObserver(redraw).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+
+setSkill(false);paintTkType();renderTasks();setUI();
+window.__demo={play,STEPS};
+setTimeout(()=>{if(!/nodemo/.test(location.hash))play(0);},900);
+})();
+</script>
+</body></html>
