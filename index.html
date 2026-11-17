@@ -363,6 +363,24 @@ table.dt{width:100%;border-collapse:collapse;font-size:12.5px}
 .fallback{margin-top:8px;border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:12px 14px;font-size:12.5px;display:flex;flex-direction:column;gap:6px}
 .fallback div{display:grid;grid-template-columns:96px 1fr;gap:10px}
 .fallback span{color:var(--mute)}
+.mon{max-width:980px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+.mon-sec{border:1px solid var(--line);border-radius:14px;background:var(--surface);padding:16px 18px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.mon-sec>b,.mon-h b{font-size:14px;font-weight:600}
+.mon-h{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.mon-h .hint{margin-top:2px}
+.sensbox{display:flex;align-items:center;gap:8px}
+.monchart{height:240px;margin:0 -6px}
+.replay{font-size:13px;background:var(--warn-soft);color:var(--warn);border-radius:9px;padding:8px 12px}
+.replay.none{background:var(--up-soft);color:var(--up)}
+.replay b{font-size:15px;margin:0 2px}
+.hits{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.hits li{display:grid;grid-template-columns:52px 74px minmax(0,1fr) auto;gap:10px;font-size:13px;align-items:center;padding:7px 12px;border-radius:9px;background:var(--sunk)}
+.hits .lo{color:var(--down);font-weight:600}.hits .hi{color:var(--warn);font-weight:600}
+.mon-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
+.mon-grid .seg{align-self:flex-start}
+@container (max-width:560px){.hits li{grid-template-columns:48px 68px minmax(0,1fr)}.hits li .hint{grid-column:1/-1}}
+.f-ok{margin-top:5px;color:var(--up);font-size:12px}
+.segs button.ch{margin-left:7px}
 .basechart{height:180px;border:1px solid var(--line);border-radius:12px;background:var(--surface);margin-top:12px}
 
 .tasks{height:100%;overflow:auto;padding:24px 28px 28px;display:flex;flex-direction:column;gap:16px}
@@ -527,7 +545,7 @@ pre.sql{margin:0;background:var(--sunk);border:1px solid var(--line);border-radi
             </div>
             <div class="thread" id="thread"><div class="thread-in" id="threadIn"></div></div>
             <div class="composer"><div class="composer-in">
-              <div class="herotop"><h1>今天想看哪些数据？</h1><p>直接提问；想让数据按时发到飞书，或者帮你盯着指标，点输入框下方「产出」里的「定时任务」。</p></div>
+              <div class="herotop"><h1>今天想看哪些数据？</h1><p>直接提问；想让数据按时发到飞书，或者让它帮你盯着指标、异常了提醒你，点输入框下方「产出」里的「定时任务」。</p></div>
               <div class="box">
                 <textarea id="q" rows="2" placeholder="请输入你的问题，回车发送，Shift+回车换行"></textarea>
                 <div class="boxbar">
@@ -557,7 +575,7 @@ pre.sql{margin:0;background:var(--sunk);border:1px solid var(--line);border-radi
               <span class="status" id="wsStatus">草稿</span>
               <button class="ib ws-close" id="wsClose" type="button" aria-label="收起">×</button>
             </div>
-            <div class="ws-tabs" id="wsTabs"><button data-tab="card" type="button">飞书卡片预览</button><button data-tab="board" type="button">组件与 SQL</button><button data-tab="plan" type="button">运行计划</button></div>
+            <div class="ws-tabs" id="wsTabs"><button data-tab="mon" type="button" hidden>智能监控设置</button><button data-tab="card" type="button">飞书卡片预览</button><button data-tab="board" type="button">组件与 SQL</button><button data-tab="plan" type="button">运行计划</button></div>
             <div class="ws-b" id="wsBody"></div>
           </section>
         </section>
@@ -645,11 +663,17 @@ let tt;function toast(s){const t=$('#toast');t.textContent=s;t.classList.add('sh
 const DAYS=['11-03','11-04','11-05','11-06','11-07','11-08','11-09','11-10','11-11','11-12','11-13','11-14','11-15','11-16'];
 const DAU=[57820,58410,59130,61240,63880,64210,58960,58120,57940,58730,60110,62450,59720,52310];
 const IOS=[8120,8180,8260,8410,8690,8720,8250,8160,8130,8210,8380,8590,8340,7490];
+const SIG=2600;
+const D30=(()=>{const a=[];for(let i=0;i<30;i++){const d=new Date(2026,9,18+i);a.push(String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'));}return a;})();
+const NZ=[.4,-.6,.9,-.3,0,.5,-.8,.2,.7,-.4,.1,0,-.5,.6,.3,-.2];
+const ANOM=[{i:4,z:-2.3,why:'活动结束后回落',dim:'老用户降得多'},{i:11,z:2.1,why:'版本更新带来回流',dim:'iOS 回流占六成'},{i:29,z:-2.8,why:'华为渠道掉量',dim:'华为占降幅 78.5%'}];
 const BASE=[58000,58600,59300,61500,63600,64000,59200,58300,58200,58900,60300,62200,60000,59600];
 const CH=[{n:'华为',dau:9820,prev:15640},{n:'小米',dau:10240,prev:10480},{n:'OPPO',dau:9110,prev:9330},{n:'vivo',dau:8760,prev:8920},{n:'iOS',dau:7490,prev:8340},{n:'官网',dau:6890,prev:7010}];
 const chg=c=>(c.dau-c.prev)/c.prev*100;
 const avg=a=>a.reduce((x,y)=>x+y,0)/a.length;
 const AVG7=avg(DAU.slice(7)),AVG7P=avg(DAU.slice(0,7));
+const B30=D30.map((_,i)=>i>=16?BASE[i-16]:BASE[((i-16)%7+7)%7]-300);
+const A30=D30.map((_,i)=>{if(i>=16)return DAU[i-16];const a=ANOM.find(x=>x.i===i);return Math.round(B30[i]+(a?a.z:NZ[i])*SIG);});
 const DROP=(DAU[13]-DAU[12])/DAU[12]*100;
 const KPI={
   dau:{v:fmt(DAU[13]),d:'▼ 12.4% 比前天',tone:'dn',spark:DAU},
@@ -727,14 +751,18 @@ const SV='width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="current
 const TICON={push:`<svg ${SV}><path d="M4 12l16-8-6 16-2.5-6.5L4 12z"/></svg>`,sub:`<svg ${SV}><path d="M20 11a8 8 0 0 0-14.5-4.5M4 4v4h4M4 13a8 8 0 0 0 14.5 4.5M20 20v-4h-4"/></svg>`,
   rule:`<svg ${SV}><path d="M6 16v-5a6 6 0 1 1 12 0v5l1.5 2h-15L6 16zM10 21h4"/></svg>`,smart:`<svg ${SV}><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z"/></svg>`};
 const SENS={low:{s:3,n:0,l:'低'},mid:{s:2.5,n:1,l:'中'},high:{s:2,n:3,l:'高'}};
+const MM={dau:'DAU',rate:'付费率',pay:'付费人数',rev:'充值金额'};
+const DIMS={ch:['渠道','华为 15,640 → 9,820，占降幅 78.5%'],nu:['新老用户','新用户降 41%，老用户降 6%'],dev:['机型','低端机（4G 内存及以下）降 33%'],geo:['地区','广东降 19%，其他省份都在 5% 以内']};
+const BL={w4:'近 4 周同一星期几',d7:'近 7 天',d28:'近 28 天滚动'};
 function newDraft(o){return Object.assign({name:'',project:PROJECT,source:'sql',sql:SQL_BASE,question:'',type:'push',freq:newF(),recv:[{n:'我',g:false}],
-  rule:{metric:'dau',cmp:'dod',val:10,miss:'silent'},sens:'mid',style:'bi',ai:true,W:clone(W0),tried:true},o||{});}
+  rule:{metric:'dau',cmp:'dod',val:10,miss:'silent'},sens:'mid',mm:['dau'],bl:'w4',hol:true,dims:['ch','nu'],quiet:{dedupe:true,twice:false,recover:true},style:'bi',ai:true,W:clone(W0),tried:true},o||{});}
 function ruleHit(d){const r=d.rule;let p,txt;
   if(r.metric==='dau'){p=r.cmp==='dod'?DROP:(DAU[13]-DAU[6])/DAU[6]*100;txt='DAU 比'+(r.cmp==='dod'?'前天':'上周同日')+' '+p.toFixed(1)+'%';}
   else{p=Math.min(...CH.map(chg));if(r.cmp!=='dod')p=p*1.04;txt='华为渠道 DAU 比'+(r.cmp==='dod'?'前天':'上周同日')+' '+p.toFixed(1)+'%';}
   return {hit:p<=-r.val,p,txt};}
 const ruleText=r=>(r.metric==='dau'?'DAU':'任一渠道 DAU')+' 比'+(r.cmp==='dod'?'前天':'上周同日')+'跌超 '+r.val+'%';
-const smartHit=d=>2.8>=SENS[d.sens].s;
+const smartWhy=d=>!(d.mm||['dau']).includes('dau')?'盯的指标里没有 DAU，其他指标昨天都在正常范围':2.8<SENS[d.sens].s?'灵敏度「低」：偏离 2.8σ 还不算异常':(d.quiet&&d.quiet.twice)?'DAU 只异常了 1 天，开着「连续 2 次异常才提醒」':'';
+const smartHit=d=>!smartWhy(d);
 function shortName(q){let s=(q||'').replace(/(每天|每日|每周.|每月\d+[号日]|工作日|每小时|每个小时)/g,'')
   .replace(/(早上|上午|中午|下午|晚上)?\d{1,2}\s*[点时:：](半|\d{1,2})?分?/g,'').replace(/(帮我|给我|看一下|建个定时任务|定时|把)/g,'');
   const p=s.split(/[，,。；;]/).map(x=>x.trim()).filter(Boolean);return ((p[0]||'').replace(/(发我|发给我|发到.*|就?提醒我)$/,'').slice(0,14))||'新任务';}
@@ -746,7 +774,7 @@ function gc(){charts.forEach((c,el)=>{if(!el.isConnected){ro.unobserve(el);c.dis
 function tk(){const s=getComputedStyle(document.documentElement),g=k=>s.getPropertyValue(k).trim();
   return {ink:g('--ink'),mute:g('--mute'),line:g('--line-2'),c1:g('--d1'),c2:g('--d2'),down:g('--down'),surface:g('--surface'),faint:g('--faint')};}
 function rgba(hex,a){const h=hex.replace('#','');if(h.length<6)return hex;return `rgba(${parseInt(h.slice(0,2),16)},${parseInt(h.slice(2,4),16)},${parseInt(h.slice(4,6),16)},${a})`;}
-function opt(m,type,compact){
+function opt(m,type,compact,k){k=k||2.5;
   const t=tk();
   const ax={axisLine:{lineStyle:{color:t.line}},axisTick:{show:false},axisLabel:{color:t.mute,fontSize:compact?10:11}};
   const kf=v=>v>=1000?(v/1000)+'k':v;
@@ -759,15 +787,16 @@ function opt(m,type,compact){
         lineStyle:{width:2,color:col},itemStyle:{color:col,borderRadius:[3,3,0,0]},
         areaStyle:type==='area'?{color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:rgba(col,.26)},{offset:1,color:rgba(col,.02)}])}:undefined,
         markPoint:isBar?undefined:{symbol:'circle',symbolSize:8,itemStyle:{color:t.down,borderColor:t.surface,borderWidth:2},label:{show:false},data:[{coord:[13,s[13]]}]}}]};}
-  if(m==='base'){const sig=2.5*2600,lo=BASE.map(b=>b-sig),band=BASE.map(()=>2*sig);
-    return {animationDuration:400,grid:{left:44,right:12,top:26,bottom:22},tooltip:{trigger:'axis'},
-      legend:{top:2,right:6,itemWidth:12,itemHeight:6,textStyle:{color:t.mute,fontSize:11},data:['实际 DAU','正常范围']},
-      xAxis:{type:'category',data:DAYS,...ax,axisLabel:{...ax.axisLabel,interval:3}},
-      yAxis:{type:'value',min:40000,splitLine:{lineStyle:{color:t.line}},axisLabel:{color:t.mute,fontSize:10,formatter:kf}},
+  if(m==='base'){const lo=B30.map(v=>v-k*SIG),band=B30.map(()=>2*k*SIG),hs=ANOM.filter(x=>Math.abs(x.z)>=k);
+    const st=compact?10000:5000,mn=Math.floor(Math.min(...lo,...A30)/st)*st;
+    return {animationDuration:400,grid:{left:compact?34:46,right:compact?8:14,top:compact?22:30,bottom:compact?18:24},tooltip:{trigger:'axis'},
+      legend:{top:0,right:4,itemWidth:12,itemHeight:6,textStyle:{color:t.mute,fontSize:compact?10:11},data:['实际 DAU','正常范围']},
+      xAxis:{type:'category',data:D30,boundaryGap:false,...ax,axisLabel:{...ax.axisLabel,interval:compact?9:4}},
+      yAxis:{type:'value',min:mn,interval:st,splitLine:{lineStyle:{color:t.line}},axisLabel:{color:t.mute,fontSize:10,formatter:kf}},
       series:[{type:'line',data:lo,stack:'b',lineStyle:{opacity:0},symbol:'none',silent:true,tooltip:{show:false}},
-        {name:'正常范围',type:'line',data:band,stack:'b',lineStyle:{opacity:0},symbol:'none',areaStyle:{color:rgba(t.c2,.18)},itemStyle:{color:t.c2},tooltip:{show:false}},
-        {name:'实际 DAU',type:'line',data:DAU,smooth:.3,showSymbol:false,lineStyle:{color:t.c1,width:2},itemStyle:{color:t.c1},
-         markPoint:{symbol:'pin',symbolSize:30,itemStyle:{color:t.down},label:{fontSize:9,formatter:'异常'},data:[{coord:[13,DAU[13]]}]}}]};}
+        {name:'正常范围',type:'line',data:band,stack:'b',lineStyle:{opacity:0},symbol:'none',areaStyle:{color:rgba(t.c2,.2)},itemStyle:{color:t.c2},tooltip:{show:false}},
+        {name:'实际 DAU',type:'line',data:A30,smooth:.25,showSymbol:false,lineStyle:{color:t.c1,width:2},itemStyle:{color:t.c1},
+         markPoint:{symbol:'circle',symbolSize:compact?8:11,itemStyle:{color:t.down,borderColor:t.surface,borderWidth:2},label:{show:false},data:hs.map(x=>({coord:[x.i,A30[x.i]]}))}}]};}
   const names=CH.map(c=>c.n),hz=type==='hbar';
   const cat={type:'category',data:hz?[...names].reverse():names,...ax};
   const val={type:'value',splitLine:{lineStyle:{color:t.line}},axisLabel:{color:t.mute,fontSize:10,formatter:kf}};
@@ -779,7 +808,7 @@ function opt(m,type,compact){
             {name:'昨天',type:'bar',data:pick('dau'),barMaxWidth:12,itemStyle:{color:t.c1,borderRadius:2}}]};
 }
 function drawEl(el){let c=charts.get(el);if(!c){c=echarts.init(el,null,{renderer:'svg'});charts.set(el,c);ro.observe(el);}
-  c.setOption(opt(el.dataset.m,el.dataset.type,el.classList.contains('f-chart')),true);}
+  c.setOption(opt(el.dataset.m,el.dataset.type,el.classList.contains('f-chart'),+el.dataset.k),true);}
 function mountCharts(root){if(typeof echarts==='undefined')return;$$('[data-m]',root).forEach(drawEl);gc();}
 function spark(arr){const mn=Math.min(...arr),mx=Math.max(...arr),n=arr.length-1;
   const pts=arr.map((v,i)=>`${(i/n*100).toFixed(1)},${(24-(v-mn)/(mx-mn||1)*20-2).toFixed(1)}`);
@@ -799,12 +828,15 @@ function cardHTML(d){
     if(h.hit){tone='red';title='⚠ '+title;sub='常规监控 · 条件命中';alert=`<div class="f-alert red"><b>${esc(ruleText(d.rule))}</b><div>实际：${esc(h.txt)}</div></div>`;}
     else sub='常规监控 · 今天没命中，照常发日报';}
   if(d.type==='smart'){
-    if(smartHit(d)){tone='orange';sub='智能监控 · 发现 1 个异常';alert=`<div class="f-alert orange"><b>DAU 低于基线 12.2%（偏离 2.8σ）</b><ul><li>渠道：华为 15,640 → 9,820，占降幅 78.5%</li><li>新老用户：新用户降 41%，老用户降 6%</li></ul></div>`;}
-    else sub='智能监控 · 各指标都在正常范围';}
+    if(!smartHit(d))return phoneWrap(d,`<div class="fs-empty"><b>按昨天的数据，这次不会发</b><br>${esc(smartWhy(d))}</div>`);
+    const ok=(d.mm||[]).filter(k=>k!=='dau').map(k=>MM[k]);
+    tone='orange';title='⚠ '+title;sub='智能监控 · 发现 1 个异常';
+    alert=`<div class="f-alert orange"><b>DAU 低于正常范围 12.2%（偏离 2.8σ）</b><ul>${(d.dims||[]).map(k=>`<li>${DIMS[k][0]}：${DIMS[k][1]}</li>`).join('')||'<li>没选拆分维度</li>'}</ul>${ok.length?`<div class="f-ok">${ok.join('、')}：都在正常范围</div>`:''}</div>`;}
   if(d.type==='sub')tone='violet';
   const head=`<div class="fh ${tone}"><div class="t">${esc(title)}</div><div class="s">${esc(sub)} · ${esc(d.project)} · 业务日期 11-16</div></div>`;
   const ks=W.filter(w=>w.type==='kpi').slice(0,4),c=W.find(w=>w.type==='chart'),tb=W.find(w=>w.type==='table');
-  const chartB=c?`<div><div class="f-cap">${esc(c.title)}</div><div class="f-chart" data-m="${c.m}" data-type="${c.chart}"></div></div>`:'';
+  const chartB=d.type==='smart'?`<div><div class="f-cap">DAU 和正常范围 · 近 30 天</div><div class="f-chart" data-m="base" data-k="${SENS[d.sens].s}"></div></div>`
+    :c?`<div><div class="f-cap">${esc(c.title)}</div><div class="f-chart" data-m="${c.m}" data-type="${c.chart}"></div></div>`:'';
   const ai=d.ai?`<div class="f-ai"><b>解读</b>　华为渠道单日少了 5,820 人，占全部降幅的 78.5%；iOS 降了 10.2%，其他渠道都在 3% 以内。</div>`:'';
   let body='';
   if(d.type==='sub'){
@@ -865,7 +897,7 @@ function typeWidget(root,get,onChange,rec){
       比 <select class="in sel" data-rk="cmp"><option value="dod" ${r.cmp==='dod'?'selected':''}>前天</option><option value="wow" ${r.cmp==='wow'?'selected':''}>上周同日</option></select>
       跌超 <input class="in num val" type="number" min="1" step="1" data-rk="val" value="${r.val}" aria-label="阈值"> % 时发</div>
       <div class="rulef">没命中时 <span class="seg sm"><button type="button" data-miss="silent" class="${r.miss==='silent'?'on':''}">不发</button><button type="button" data-miss="brief" class="${r.miss==='brief'?'on':''}">照常发日报</button></span></div><div class="eval"></div>`;
-    if(d.type==='smart')x.innerHTML=`<div class="rulef">灵敏度 <span class="seg sm">${Object.keys(SENS).map(k=>`<button type="button" data-sens="${k}" class="${d.sens===k?'on':''}">${SENS[k].l}</button>`).join('')}</span></div><div class="eval"></div>`;
+    if(d.type==='smart')x.innerHTML=`<div class="rulef">灵敏度 <span class="seg sm">${Object.keys(SENS).map(k=>`<button type="button" data-sens="${k}" class="${d.sens===k?'on':''}">${SENS[k].l}</button>`).join('')}</span></div><div class="eval"></div><div class="note">盯哪些指标、按什么拆原因、防打扰，在右边「智能监控设置」里调。</div>`;
     paintEval();};
   const paint=()=>{const d=get();$$('[data-type]',w).forEach(b=>b.classList.toggle('on',b.dataset.type===d.type));paintX();};
   w.addEventListener('click',e=>{const b=e.target.closest('[data-type],[data-sens],[data-miss]');if(!b)return;const d=get();
@@ -901,7 +933,7 @@ function compText(d){if(d.type==='sub')return '问题 + 分析结论 + 1 张图'
 function infoHTML(d){const n=nextRuns(d.freq,1)[0],always=d.type==='push'||d.type==='sub'||(d.type==='rule'&&d.rule.miss==='brief');
   return `<div><div class="lbl">下一次${d.type==='push'||d.type==='sub'?'发送':'检查'}</div><div class="nx-v num">${fmtRun(n)}</div><div class="hint">${freqText(d.freq)}${always?'':' · 命中条件才发'}</div></div>
   <dl class="kv"><dt>发给</dt><dd>${d.recv.map(r=>`<span class="mini-p">${esc(r.n)}</span>`).join('')||'<span class="hint">还没选</span>'}</dd>
-  <dt>数据</dt><dd>${d.source==='sql'?'你的 SQL · 试跑 84 行 · 日期用 <code>\${biz_date}</code>':'按问题重新取数，每次重新生成 SQL'}</dd>
+  <dt>数据</dt><dd>${d.source==='sql'?'你的 SQL · 试跑 84 行 · 日期用 <code>\${biz_date}</code>':d.type==='sub'?'按问题重新取数，每次重新分析':'从你的话生成 SQL（2 条）· 已试跑 · 日期用 <code>\${biz_date}</code>'}</dd>
   <dt>执行身份</dt><dd>${ME} 的数据权限</dd><dt>卡片组成</dt><dd>${compText(d)}</dd></dl>
   ${d.type==='sub'?'':`<div class="blk"><div class="lbl">卡片样式</div><div class="stylep">${STYLES.map(([k,n,s])=>`<button type="button" class="stb ${d.style===k?'on':''}" data-style="${k}">${thumb(k)}<b>${n}</b><small>${s}</small></button>`).join('')}</div></div>`}
   <div class="tg"><button type="button" class="sw ${d.ai?'on':''}" data-ai aria-label="AI 解读"></button><span>AI 解读</span><span class="hint">2～3 句，数字只取自查询结果</span></div>`;}
@@ -921,19 +953,38 @@ function planHTML(d){const runs=nextRuns(d.freq,5),to=d.recv.map(r=>r.n).join('�
     rule:[['换日期变量，跑 SQL',''],['判断条件',ruleText(d.rule)],['命中：发告警卡','没命中：'+(d.rule.miss==='brief'?'照常发日报':'不发')]],
     smart:[['跑 SQL',''],['和基线比较','近 4 周同一星期几，灵敏度 '+SENS[d.sens].l],['异常时按维度归因','渠道、新老用户'],['发告警卡','同一指标 6 小时内不重复']]}[d.type];
   return `<div class="plan"><div><h3>接下来 5 次</h3><ul class="runs">${runs.map((r,i)=>`<li><span class="when num">${fmtRun(r)}</span>${i?'':'<span class="nx">下一次</span>'}<span class="act">${act}</span></li>`).join('')}</ul>
-    ${d.type==='smart'?'<div class="basechart" data-m="base" data-type="line"></div>':''}</div>
+    ${d.type==='smart'?`<div class="basechart" data-m="base" data-k="${SENS[d.sens].s}"></div>`:''}</div>
     <div><h3>到点会做什么</h3><ol class="flow">${flowS.map(([a,b])=>`<li><span>${esc(a)}${b?`<small>${esc(b)}</small>`:''}</span></li>`).join('')}</ol>
     <div class="fallback"><div><span>数据没就绪</span>每 10 分钟重试，最多 3 次，还没到就发一条“数据延迟”</div><div><span>SQL 报错</span>改为按问题重新分析并照常发出，同时提醒你修 SQL</div><div><span>连续失败 3 次</span>自动暂停，通知创建人</div></div></div></div>`;}
+function monHTML(d){const sv=SENS[d.sens],hs=ANOM.filter(x=>Math.abs(x.z)>=sv.s);
+  return `<div class="mon">
+  <div class="mon-sec"><div class="mon-h"><div><b>盯哪些指标</b><div class="hint">从你的话里取出来的，点一下可以加上或去掉</div></div></div>
+    <div class="chips">${Object.entries(MM).map(([k,n])=>`<button type="button" class="chip ${d.mm.includes(k)?'on':''}" data-mm="${k}">${d.mm.includes(k)?'✓ ':'+ '}${n}</button>`).join('')}</div></div>
+  <div class="mon-sec"><div class="mon-h"><div><b>DAU · 近 30 天和正常范围</b><div class="hint">正常范围按「${BL[d.bl]}」学出来；落到阴影外就算异常，不用自己定阈值</div></div>
+      <div class="sensbox"><span class="hint">灵敏度</span><span class="seg sm" id="monSens">${Object.keys(SENS).map(k=>`<button type="button" data-msens="${k}" class="${d.sens===k?'on':''}">${SENS[k].l}</button>`).join('')}</span></div></div>
+    <div class="monchart" data-m="base" data-k="${sv.s}"></div>
+    <div class="replay ${hs.length?'':'none'}">按近 30 天数据回放：灵敏度「${sv.l}」（偏离超过 ${sv.s}σ）会提醒<b class="num">${hs.length}</b>次</div>
+    ${hs.length?`<ul class="hits">${hs.map(x=>`<li><span class="num">${D30[x.i]}</span><span class="${x.z<0?'lo':'hi'}">${x.z<0?'偏低':'偏高'} ${Math.abs(x.z)}σ</span><span>${x.why}</span><span class="hint">${x.dim}</span></li>`).join('')}</ul>`:'<div class="hint">这 30 天一次都不会提醒；只有偏离超过 3σ 的大波动才发。</div>'}</div>
+  <div class="mon-grid">
+    <div class="mon-sec"><b>正常范围怎么算</b><span class="seg sm">${Object.entries(BL).map(([k,n])=>`<button type="button" data-bl="${k}" class="${d.bl===k?'on':''}">${n}</button>`).join('')}</span>
+      <div class="tg"><button type="button" class="sw ${d.hol?'on':''}" data-qk="hol" aria-label="节假日、大促自动放宽"></button><span>节假日、大促自动放宽</span></div></div>
+    <div class="mon-sec" id="monDims"><b>异常时按什么拆原因</b><div class="chips">${Object.entries(DIMS).map(([k,[n]])=>`<button type="button" class="chip ${d.dims.includes(k)?'on':''}" data-dim="${k}">${n}</button>`).join('')}</div><div class="hint">告警卡里写出每一项拆出来的结果</div></div>
+    <div class="mon-sec" id="monQuiet"><b>防打扰</b>${[['dedupe','同一指标 6 小时内只提醒一次'],['twice','连续 2 次异常才提醒'],['recover','恢复正常时发一条恢复通知']].map(([k,n])=>`<div class="tg"><button type="button" class="sw ${d.quiet[k]?'on':''}" data-qk="${k}" aria-label="${n}"></button><span>${n}</span></div>`).join('')}</div>
+  </div></div>`;}
 function renderWS(){
   const d=CD;if(!d)return;
   if(document.activeElement!==$('#wsName'))$('#wsName').value=d.name;
   $('#wsProj').textContent=d.project;
   const st=$('#wsStatus');st.textContent=flow===2?'已创建 · 运行中':'草稿 · 还没创建';st.classList.toggle('live',flow===2);
+  const mt=$('#wsTabs [data-tab="mon"]');mt.hidden=d.type!=='smart';
+  if(d.type==='smart'&&!d.monSeen){d.monSeen=1;wsTab='mon';}
+  if(mt.hidden&&wsTab==='mon')wsTab='card';
   $$('#wsTabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===wsTab));
   const b=$('#wsBody'),y=b.scrollTop;
   if(wsTab==='card')b.innerHTML=`<div class="pvgrid"><div>${cardHTML(d)}</div><div class="info">${infoHTML(d)}</div></div>`;
   if(wsTab==='board')b.innerHTML=boardHTML(d);
   if(wsTab==='plan')b.innerHTML=planHTML(d);
+  if(wsTab==='mon')b.innerHTML=monHTML(d);
   b.scrollTop=y;mountCharts(b);}
 function wsSoon(){cancelAnimationFrame(rafWS);rafWS=requestAnimationFrame(renderWS);}
 $('#wsTabs').addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(!b)return;wsTab=b.dataset.tab;$('#wsBody').scrollTop=0;renderWS();});
@@ -942,6 +993,14 @@ const wsb=$('#wsBody');
 let pop=null;const closePop=()=>{if(pop){pop.remove();pop=null;}};
 document.addEventListener('click',e=>{if(pop&&!pop.contains(e.target)&&!e.target.closest('[data-act="type"]'))closePop();});
 wsb.addEventListener('click',e=>{
+  if(CD){
+    const mm=e.target.closest('[data-mm]');if(mm){const k=mm.dataset.mm,i=CD.mm.indexOf(k);if(i>=0){if(CD.mm.length>1)CD.mm.splice(i,1);else toast('至少要盯一个指标');}else CD.mm.push(k);onChatChange();return;}
+    const ms=e.target.closest('[data-msens]');if(ms){CD.sens=ms.dataset.msens;paints.forEach(p=>p());onChatChange();return;}
+    const bl=e.target.closest('[data-bl]');if(bl){CD.bl=bl.dataset.bl;onChatChange();return;}
+    const dm=e.target.closest('[data-dim]');if(dm){const k=dm.dataset.dim,i=CD.dims.indexOf(k);if(i>=0)CD.dims.splice(i,1);else CD.dims.push(k);onChatChange();return;}
+    const qk=e.target.closest('[data-qk]');if(qk){const k=qk.dataset.qk;if(k==='hol')CD.hol=!CD.hol;else CD.quiet[k]=!CD.quiet[k];onChatChange();
+      if(k==='twice')toast(CD.quiet.twice?'已开：只异常 1 天的不提醒（昨天这次就不会发）':'已关：异常 1 次就提醒');return;}
+  }
   const st=e.target.closest('[data-style]');if(st&&CD){CD.style=st.dataset.style;onChatChange();return;}
   if(e.target.closest('[data-ai]')&&CD){CD.ai=!CD.ai;onChatChange();return;}
   if(e.target.closest('#bdAddBtn')){addWidget();return;}
@@ -981,9 +1040,9 @@ $('#sqCopy').onclick=()=>{try{navigator.clipboard.writeText(curSql).then(()=>toa
 
 /* ---------- 对话 ---------- */
 const STARTERS=[
-  {t:'贴 SQL，定时发',d:'贴一段 SQL，说每天几点、发到哪',fill:()=>SQL_PASTE+'\n每天9点发到运营群',ic:TICON.push},
-  {t:'盯一个指标',d:'DAU 比前天跌超 10% 才提醒我',fill:()=>'每小时看一下 DAU，比前天跌超 10% 就提醒我',ic:TICON.rule},
-  {t:'订阅一个问题',d:'每周一把上周充值波动的原因发我',fill:()=>'每周一上午10点，把上周充值波动的原因分析发我',ic:TICON.sub}];
+  {t:'盯住指标，异常提醒',d:'不设阈值，DAU、付费率异常了告诉我原因',fill:()=>'帮我盯着 DAU 和付费率，有异常就告诉我原因，每天早上8点检查',ic:TICON.smart},
+  {t:'跌破阈值提醒',d:'DAU 比前天跌超 10% 才提醒我',fill:()=>'每小时看一下 DAU，比前天跌超 10% 就提醒我',ic:TICON.rule},
+  {t:'贴 SQL，定时发',d:'贴一段 SQL，说每天几点、发到哪',fill:()=>SQL_PASTE+'\n每天9点发到运营群',ic:TICON.push}];
 $('#starters').innerHTML=STARTERS.map((s,i)=>`<button class="starter" type="button" data-start="${i}"><b>${s.ic}${s.t}</b><span>${s.d}</span></button>`).join('');
 $('#starters').addEventListener('click',e=>{const b=e.target.closest('[data-start]');if(!b)return;setSkill(true);$('#q').value=STARTERS[+b.dataset.start].fill();autoGrow();$('#q').focus();});
 let skillOn=false;
@@ -1027,12 +1086,14 @@ function send(){
   startFlow(raw);}
 function startFlow(raw){
   flow=1;const {sql,rest}=splitSQL(raw);const f=parseFreq(rest);
-  let type='push';
-  if(!sql&&/跌|涨|超过|低于|提醒|告警|监控/.test(rest))type=/智能|异常|自动/.test(rest)?'smart':'rule';
+  let type='push';const hasPct=/\d+(?:\.\d+)?\s*%/.test(rest);
+  if(!sql&&/跌|涨|超过|低于|提醒|告警|监控|盯|异常/.test(rest))type=!hasPct&&/智能|异常|自动|盯/.test(rest)?'smart':'rule';
   else if(!sql&&/分析|原因|为什么|怎么回事/.test(rest))type='sub';
-  CD=newDraft({project:PROJECT,source:sql?'sql':'question',question:sql?'':rest,type,freq:f||newF(),
-    name:PROJECT+' '+(sql?'渠道 DAU 日报':shortName(rest)+(type==='rule'||type==='smart'?' 监控':''))});
+  const mm=[];if(/DAU|活跃/i.test(rest))mm.push('dau');if(/付费率/.test(rest))mm.push('rate');if(/付费人数/.test(rest))mm.push('pay');if(/充值|收入/.test(rest))mm.push('rev');
+  CD=newDraft({project:PROJECT,source:sql?'sql':'question',question:sql?'':rest,type,freq:f||newF(),mm:mm.length?mm:['dau'],
+    name:PROJECT+' '+(sql?'渠道 DAU 日报':type==='smart'?(mm.length?mm.map(k=>MM[k]).join('、'):'核心指标')+' 智能监控':shortName(rest)+(type==='rule'?' 监控':''))});
   const pct=rest.match(/(\d+(?:\.\d+)?)\s*%/);if(pct)CD.rule.val=+pct[1];
+  if(/上周同日|上周同一天/.test(rest))CD.rule.cmp='wow';
   CD.recog={freq:!!f,grp:/群/.test(rest)};
   if(/运营群/.test(rest))CD.recv.push({n:PROJECT+'运营群',g:true});
   if(/数据组/.test(rest))CD.recv.push({n:'数据组群',g:true});
@@ -1040,13 +1101,17 @@ function startFlow(raw){
   setHero(false);later(()=>setSplit(true),200);
   const a=addA('<ul class="steps"></ul>');const ul=$('.steps',a);
   const tail=CD.recog.grp?'，接收人：运营群':'';
-  const steps=sql?['识别到要建定时任务','解析 SQL：3 列（日期、渠道、DAU），按日期和渠道分组',`在「${PROJECT}」试跑：返回 84 行，用时 0.8 秒`,'SQL 里写死了 11-03 ~ 11-16，已换成随执行日滚动的日期变量',(f?`识别到时间「${freqText(CD.freq)}」`:'没说时间，先按每天 09:00')+tail,'生成 7 个组件和飞书卡片预览']
+  const steps=type==='smart'?['识别到要建定时任务',`要盯的指标：${CD.mm.map(k=>MM[k]).join('、')}`,`生成取数 SQL（${CD.mm.length} 条），在「${PROJECT}」试跑通过`,(f?`识别到时间「${freqText(CD.freq)}」`:'没说时间，先按每天 09:00')+tail,'没给阈值，推荐「智能监控」：按近 4 周同一星期几学正常范围','用近 30 天数据回放：灵敏度「中」会提醒 1 次（11-16 华为掉量）','生成监控设置和告警卡预览']
+    :sql?['识别到要建定时任务','解析 SQL：3 列（日期、渠道、DAU），按日期和渠道分组',`在「${PROJECT}」试跑：返回 84 行，用时 0.8 秒`,'SQL 里写死了 11-03 ~ 11-16，已换成随执行日滚动的日期变量',(f?`识别到时间「${freqText(CD.freq)}」`:'没说时间，先按每天 09:00')+tail,'生成 7 个组件和飞书卡片预览']
     :['识别到要建定时任务',`理解问题，生成取数 SQL（2 条），在「${PROJECT}」试跑通过`,(f?`识别到时间「${freqText(CD.freq)}」`:'没说时间，先按每天 09:00')+tail,type==='rule'?`识别到条件「${ruleText(CD.rule)}」`:type==='sub'?'这是要定期重新分析的问题，推荐「问题订阅」':'推荐「定时推送」','生成飞书卡片预览'];
   let i=0;
   const tick=()=>{const prev=ul.lastElementChild;if(prev)prev.classList.add('ok');
     if(i<steps.length){ul.insertAdjacentHTML('beforeend',`<li><span class="ic">✓</span><span>${esc(steps[i])}</span></li>`);i++;scrollT();later(tick,420);}
-    else{wsTab='card';renderWS();
-      a.insertAdjacentHTML('beforeend',`<div>${sql?'SQL 试跑通过了':'取数没问题'}。右边是到点后飞书上会收到的样子，可以直接在上面改。还差三项，确认一下：</div>`);scrollT();
+    else{wsTab=type==='smart'?'mon':'card';renderWS();
+      const msg=type==='smart'?'取数没问题。你没给阈值，所以用智能监控：右边是 DAU 近 30 天和学出来的正常范围，灵敏度、拆原因的维度、防打扰都能直接调。还差三项，确认一下：'
+        :type==='rule'?`取数没问题。按昨天的数据试算，「${esc(ruleText(CD.rule))}」${ruleHit(CD).hit?'<b class="dn">会命中</b>，右边就是会收到的告警卡':'不会命中'}。还差三项，确认一下：`
+        :`${sql?'SQL 试跑通过了':'取数没问题'}。右边是到点后飞书上会收到的样子，可以直接在上面改。还差三项，确认一下：`;
+      a.insertAdjacentHTML('beforeend',`<div>${msg}</div>`);scrollT();
       later(askTime,350);}};
   tick();}
 function askCard(id,n,title,tag,mount,sum,next){
@@ -1060,13 +1125,13 @@ function askCard(id,n,title,tag,mount,sum,next){
   return card;}
 const chg2=()=>onChatChange();
 function askTime(){askCard('askTime','1 / 3','什么时候发？',CD.recog.freq?'已从你的话里识别':'',b=>timeWidget(b,()=>CD,chg2),()=>`发送时间：<b>${freqText(CD.freq)}</b> · 下次 ${fmtRun(nextRuns(CD.freq,1)[0])}`,askType);}
-function askType(){const rec=CD.type;askCard('askType','2 / 3','哪种任务？',CD.source==='sql'?'有 SQL，推荐定时推送':'按你的话推荐了一种',b=>typeWidget(b,()=>CD,chg2,rec),()=>`任务类型：<b>${TYPES[CD.type].n}</b>${CD.type==='rule'?' · '+esc(ruleText(CD.rule)):''}`,askRecv);}
+function askType(){const rec=CD.type;askCard('askType','2 / 3','哪种任务？',CD.source==='sql'?'有 SQL，推荐定时推送':CD.type==='smart'?'没给阈值，推荐智能监控':CD.type==='rule'?'给了阈值，推荐常规监控':'按你的话推荐了一种',b=>typeWidget(b,()=>CD,chg2,rec),()=>`任务类型：<b>${TYPES[CD.type].n}</b>${CD.type==='rule'?' · '+esc(ruleText(CD.rule)):''}`,askRecv);}
 function askRecv(){askCard('askRecv','3 / 3','发给谁？',CD.recog.grp?'已识别：运营群':'',b=>recvWidget(b,()=>CD,chg2),()=>`发给：<b>${esc(CD.recv.map(r=>r.n).join('、'))}</b>`,askSum);}
 function askSum(){
   const a=addA(`<div class="ask" id="askSum"><div class="ask-h"><b>都齐了，确认一下</b></div><div class="ask-b"><dl class="kv"></dl></div>
     <div class="ask-f"><button class="btn sm" data-test type="button">测试发送到我飞书</button><span class="sp"></span><button class="btn pri" data-create type="button">创建任务</button></div></div>`);
   const card=$('.ask',a);
-  const p=()=>{$('.kv',card).innerHTML=`<dt>名称</dt><dd>${esc(CD.name)}</dd><dt>项目</dt><dd>🔒 ${esc(CD.project)} · 随对话带入</dd><dt>类型</dt><dd>${TYPES[CD.type].n}</dd><dt>时间</dt><dd>${freqText(CD.freq)}</dd><dt>发给</dt><dd>${esc(CD.recv.map(r=>r.n).join('、'))}</dd><dt>内容</dt><dd>${CD.source==='sql'?`你的 SQL · ${CD.W.length} 个组件`:'按问题重新分析'}</dd>`;};
+  const p=()=>{$('.kv',card).innerHTML=`<dt>名称</dt><dd>${esc(CD.name)}</dd><dt>项目</dt><dd>🔒 ${esc(CD.project)} · 随对话带入</dd><dt>类型</dt><dd>${TYPES[CD.type].n}</dd>${CD.type==='smart'?`<dt>规则</dt><dd>${esc(CD.mm.map(k=>MM[k]).join('、'))} · 灵敏度${SENS[CD.sens].l} · 按${esc(CD.dims.map(k=>DIMS[k][0]).join('、')||'—')}拆原因</dd>`:CD.type==='rule'?`<dt>规则</dt><dd>${esc(ruleText(CD.rule))}才发</dd>`:''}<dt>时间</dt><dd>${freqText(CD.freq)}</dd><dt>发给</dt><dd>${esc(CD.recv.map(r=>r.n).join('、'))}</dd><dt>内容</dt><dd>${CD.source==='sql'?`你的 SQL · ${CD.W.length} 个组件`:CD.type==='sub'?'按问题重新分析':'从你的话生成的 SQL'}</dd>`;};
   p.sum=p;paints.push(p);p();
   $('[data-test]',card).onclick=()=>toast('已发到你的飞书（测试，不计入发送记录）');
   $('[data-create]',card).onclick=()=>{createFromChat();$('.ask-f',card).outerHTML='<div class="ask-f"><span class="created">✓ 已创建，正在运行</span></div>';};}
@@ -1092,8 +1157,8 @@ function createFromChat(){
       $('[data-save]',f).onclick=()=>{CD.type='rule';CD.rule.miss='silent';if(!/监控$/.test(CD.name)){CD.name=CD.name.replace(/日报$/,'')+'监控';}
         wsTab='card';paints.forEach(p=>p());onChatChange();area.innerHTML='';
         const h=ruleHit(CD);later(()=>addA(`已改成常规监控：${esc(ruleText(CD.rule))}才发。按昨天的数据试算，${h.hit?'<b class="dn">会触发告警</b>（'+esc(h.txt)+'），右边就是会收到的告警卡':'不会触发'}。`),400);};return;}
-    if(k==='smart'){CD.type='smart';wsTab='plan';paints.forEach(p=>p());onChatChange();area.innerHTML='';
-      later(()=>addA('已改成智能监控：用近 4 周同一星期几的数据建基线，偏离超过 2.5σ 才发，并按渠道、新老用户拆原因。右边「运行计划」里能看到基线。'),400);}
+    if(k==='smart'){CD.type='smart';CD.monSeen=1;wsTab='mon';if(!/监控$/.test(CD.name))CD.name=CD.name.replace(/日报$/,'')+'智能监控';paints.forEach(p=>p());onChatChange();area.innerHTML='';
+      later(()=>addA('已改成智能监控：按近 4 周同一星期几学正常范围，偏离超过 2.5σ 才提醒，并按渠道、新老用户拆原因。右边「智能监控设置」里能调灵敏度，看近 30 天会提醒几次。'),400);}
   });}
 function followUp(raw){
   addU(esc(raw));const did=[];
@@ -1235,44 +1300,64 @@ async function ghostDrag(srcSel,dstSel,label,tk){
   await wait(950,tk);dst.classList.add('drop-l');await wait(450,tk);g.remove();bw&&bw.classList.remove('dragging');dst.classList.remove('drop-l');ripple();}
 function resetAll(){closeSql();closeMD();closePop();page='';goPage('chat');newChat();PROJECT=PROJS[0];$('#projTop').textContent=PROJECT+' ▾';$('#projPill').textContent='▤ '+PROJECT;
   TASKS=clone(TASKS0);tkType='all';paintTkType();$('#tkProj').value=PROJECT;$('#tkSearch').value='';$('#mergeNote').hidden=false;renderTasks();cleanupDemo();}
+async function setVal(sel,v,tk){const el=await moveTo(sel,tk);if(!el)return;ripple();el.value=v;el.dispatchEvent(new Event('input',{bubbles:true}));await wait(350,tk);}
 const STEPS=[
- {t:'问数默认居中',d:'没开始问之前，输入框在页面中间。先点输入框下方「产出」里的「定时任务」，输入框里会出现定时任务标签。',run:async tk=>{
-   await wait(700,tk);await tap('#outTask',tk);await wait(800,tk);}},
- {t:'贴一段 SQL，说什么时候发',d:'直接粘贴 SQL，再补一句“每天 9 点发到运营群”。SQL、时间和接收群都会被识别出来。',run:async tk=>{
+ {c:'智能监控',t:'问数默认居中，打开「定时任务」',d:'点输入框下方「产出 · 定时任务」，说一句想盯哪些指标，不用给阈值。',run:async tk=>{
+   await wait(600,tk);await tap('#outTask',tk);await wait(300,tk);
+   await typeIn('#q','帮我盯着 DAU 和付费率，有异常就告诉我原因，每天早上8点检查',tk);await tap('#send',tk);await wait(400,tk);}},
+ {c:'智能监控',t:'没给阈值，自动用智能监控',d:'对话移到左边；右边是近 30 天走势和自动学出的正常范围，阴影外就是异常。',run:async tk=>{
+   await need('#askTime',tk);await wait(500,tk);await moveTo('#wsBody .monchart',tk);await wait(2600,tk);}},
+ {c:'智能监控',t:'调灵敏度，当场看到会提醒几次',d:'高：近 30 天提醒 3 次；低：一次不提醒；中：只提醒昨天那次。用回放代替猜阈值。',run:async tk=>{
+   await tap('#monSens [data-msens="high"]',tk);await moveTo('#wsBody .hits',tk);await wait(2200,tk);
+   await tap('#monSens [data-msens="low"]',tk);await moveTo('#wsBody .replay',tk);await wait(1600,tk);
+   await tap('#monSens [data-msens="mid"]',tk);await moveTo('#wsBody .hits',tk);await wait(1600,tk);}},
+ {c:'智能监控',t:'异常时自动拆原因，而且不刷屏',d:'加上「机型」这个拆分维度；防打扰：6 小时内只提醒一次，恢复正常再发一条。',run:async tk=>{
+   await tap('#wsBody [data-dim="dev"]',tk);await wait(600,tk);const q=await moveTo('#monQuiet',tk,60,40);spot(q);await wait(2200,tk);}},
+ {c:'智能监控',t:'在对话里确认时间、类型、接收人',d:'三张小卡片依次确认：每天 08:00 检查、类型「智能监控」、再加数据组群。',run:async tk=>{
+   await tap('#askTime [data-ok]',tk);await need('#askType',tk);await wait(500,tk);await moveTo('#askType [data-type="smart"]',tk);await wait(800,tk);await tap('#askType [data-ok]',tk);
+   await need('#askRecv',tk);await wait(300,tk);await tap('#askRecv [data-add="数据组群"]',tk);await wait(300,tk);await tap('#askRecv [data-ok]',tk);await need('#askSum',tk);await wait(600,tk);}},
+ {c:'智能监控',t:'出异常时收到的告警卡',d:'橙色告警卡：偏离多少、按维度拆出的原因、30 天走势和正常范围。然后创建。',run:async tk=>{
+   await tap('#wsTabs [data-tab="card"]',tk);await wait(500,tk);await moveTo('#wsBody .phone',tk,180,150);await wait(2600,tk);
+   await tap('#askSum [data-create]',tk);await wait(1400,tk);}},
+ {c:'常规监控',t:'自己定阈值：常规监控',d:'新对话说“每小时看一下 DAU，比前天跌超 10% 就提醒我”，阈值和频率都会识别。',run:async tk=>{
+   await tap('#btnNew',tk);await wait(700,tk);await tap('#outTask',tk);
+   await typeIn('#q','每小时看一下 DAU，比前天跌超 10% 就提醒我',tk);await tap('#send',tk);await need('#askTime',tk);await wait(700,tk);
+   await moveTo('#wsBody .phone',tk,180,120);await wait(1500,tk);await tap('#askTime [data-ok]',tk);await need('#askType',tk);await wait(500,tk);}},
+ {c:'常规监控',t:'改阈值，当场试算会不会命中',d:'改成 15%：昨天的数据不会命中，这次不发；改回 10%：命中，变回红色告警卡。',run:async tk=>{
+   await setVal('#askType [data-rk="val"]',15,tk);await moveTo('#askType .eval',tk);await wait(1300,tk);await moveTo('#wsBody .phone',tk,180,120);await wait(1600,tk);
+   await setVal('#askType [data-rk="val"]',10,tk);await moveTo('#askType .eval',tk);await wait(1000,tk);await moveTo('#wsBody .phone',tk,180,120);await wait(1700,tk);}},
+ {c:'常规监控',t:'没命中时发不发，然后创建',d:'没命中的日子可以不发，也可以照常发日报。确认接收人后创建。',run:async tk=>{
+   await moveTo('#askType [data-miss="silent"]',tk);await wait(900,tk);await tap('#askType [data-ok]',tk);await need('#askRecv',tk);await wait(400,tk);
+   await tap('#askRecv [data-ok]',tk);await need('#askSum',tk);await wait(600,tk);await tap('#askSum [data-create]',tk);await wait(1300,tk);}},
+ {c:'定时推送',t:'最常规的：贴 SQL 定时发',d:'新对话里粘贴 SQL，补一句“每天 9 点发到运营群”，不点「定时任务」也能识别。',run:async tk=>{
+   await tap('#btnNew',tk);await wait(600,tk);
    const q=await moveTo('#q',tk);ripple();q.focus({preventScroll:true});q.value=SQL_PASTE+'\n';autoGrow();await wait(700,tk);
-   await typeIn('#q','帮我建个定时任务，每天9点发到运营群',tk,true);await tap('#send',tk);await wait(500,tk);}},
- {t:'对话移到左边，右边是预期效果',d:'开始问以后对话收到左栏，右边留出大块地方，实时显示到点后飞书上收到的卡片。',run:async tk=>{
-   await need('#askTime',tk);await wait(600,tk);await moveTo('#wsBody .phone',tk,180,140);await wait(2200,tk);}},
- {t:'用控件确认发送时间',d:'时间已从你的话里识别好，也可以点着改。这里改成工作日 09:30，下面马上算出接下来三次。',run:async tk=>{
-   await tap('#askTime [data-kind="workday"]',tk);await tap('#askTime [data-time="09:30"]',tk);await moveTo('#askTime .nexts',tk);await wait(1200,tk);await tap('#askTime [data-ok]',tk);await wait(500,tk);}},
- {t:'选任务类型',d:'四种：定时推送、问题订阅（原订阅任务）、常规监控、智能监控。有 SQL 时推荐定时推送。',run:async tk=>{
-   await moveTo('#askType [data-type="sub"]',tk);await wait(700,tk);await moveTo('#askType [data-type="rule"]',tk);await wait(700,tk);
-   await tap('#askType [data-type="push"]',tk);await wait(400,tk);await tap('#askType [data-ok]',tk);await wait(500,tk);}},
- {t:'确认接收人',d:'已识别出「运营群」，再点一下常用里的「数据组群」。',run:async tk=>{
-   await tap('#askRecv [data-add="数据组群"]',tk);await wait(600,tk);await tap('#askRecv [data-ok]',tk);await need('#askSum',tk);await wait(700,tk);}},
- {t:'每个组件都存着 SQL',d:'切到「组件与 SQL」：拖动排序，卡片按这个顺序取组件；点「SQL」能看到从你的 SQL 派生出来的语句。',run:async tk=>{
+   await typeIn('#q','帮我建个定时任务，每天9点发到运营群',tk,true);await tap('#send',tk);await need('#askTime',tk);await wait(600,tk);
+   await moveTo('#wsBody .phone',tk,180,140);await wait(2000,tk);}},
+ {c:'定时推送',t:'用控件确认时间、类型、接收人',d:'时间改成工作日 09:30；有 SQL 推荐「定时推送」；再加上数据组群。',run:async tk=>{
+   await tap('#askTime [data-kind="workday"]',tk);await tap('#askTime [data-time="09:30"]',tk);await moveTo('#askTime .nexts',tk);await wait(900,tk);await tap('#askTime [data-ok]',tk);
+   await need('#askType',tk);await wait(500,tk);await tap('#askType [data-ok]',tk);
+   await need('#askRecv',tk);await wait(300,tk);await tap('#askRecv [data-add="数据组群"]',tk);await wait(300,tk);await tap('#askRecv [data-ok]',tk);await need('#askSum',tk);await wait(600,tk);}},
+ {c:'定时推送',t:'每个组件都存着 SQL',d:'「组件与 SQL」里拖动排序；点「SQL」看派生出的语句，只有创建人能看。',run:async tk=>{
    await tap('#wsTabs [data-tab="board"]',tk);await wait(700,tk);
    await ghostDrag('#board .bw[data-id="c2"] .grip','#board .bw[data-id="c1"]','⋮⋮ 昨日分渠道 DAU',tk);moveWidget('c2','c1',false);await wait(900,tk);
    await tap('#board .bw[data-id="k1"] [data-act="sql"]',tk);await wait(2800,tk);await tap('#sqClose',tk);await wait(300,tk);}},
- {t:'创建任务',d:'确认无误，点「创建任务」。',run:async tk=>{
-   await tap('#wsTabs [data-tab="card"]',tk);await tap('#askSum [data-create]',tk);await wait(1200,tk);}},
- {t:'创建后接着配置',d:'创建完给几个常用选项。这里加一个告警条件：DAU 比前天跌超 10% 才发，右边马上变成告警卡。',run:async tk=>{
-   await tap('#askInit [data-init="rule"]',tk);await wait(600,tk);await moveTo('#ruleForm .eval',tk);await wait(900,tk);
-   await tap('#ruleForm [data-save]',tk);await wait(1200,tk);await moveTo('#wsBody .phone',tk,180,120);await wait(1500,tk);
-   await tap('#wsTabs [data-tab="plan"]',tk);await wait(2200,tk);}},
- {t:'在「定时任务」页查看',d:'问数工作台新增「定时任务」，原「订阅任务」也并在这里，显示为「问题订阅」。刚建的任务排在最上面。',run:async tk=>{
-   await tap('#menuTasks',tk);await wait(800,tk);await moveTo('#tkBody tr td.name',tk);await wait(1500,tk);
+ {c:'定时推送',t:'创建后接着配置',d:'创建后给几个常用选项：加告警、改智能监控、换样式、发测试。这里换成表格。',run:async tk=>{
+   await tap('#wsTabs [data-tab="card"]',tk);await tap('#askSum [data-create]',tk);await need('#askInit',tk);await wait(900,tk);
+   await tap('#askInit [data-init="style"]',tk);await wait(500,tk);await tap('#initStyle [data-st="table"]',tk);await wait(600,tk);await moveTo('#wsBody .phone',tk,180,140);await wait(2000,tk);}},
+ {c:'定时任务页',t:'三个任务都在「定时任务」页',d:'刚建的三个任务排在最上面；原「订阅任务」也并到这里，显示为「问题订阅」。',run:async tk=>{
+   await tap('#menuTasks',tk);await wait(800,tk);await moveTo('#tkBody tr:nth-child(3) td.name',tk);await wait(900,tk);await moveTo('#tkBody tr:nth-child(1) td.name',tk);await wait(1300,tk);
    spot($('#mergeNote'));await moveTo('#tkBody tr[data-origin="sub"] .ttag',tk);await wait(2000,tk);}},
- {t:'也可以手动新建',d:'不经过对话也能建：同一套控件，选内容来源、类型、时间和接收人，右边一样实时预览。',run:async tk=>{
+ {c:'定时任务页',t:'也可以手动新建',d:'不经过对话也能建：同一套控件，右边一样实时预览。',run:async tk=>{
    await tap('#tkNew',tk);await wait(800,tk);await tap('#mdSrc [data-v="question"]',tk);
    await typeIn('#mdQuestion','上周充值波动主要来自哪些渠道',tk);await tap('#mdTime [data-kind="weekly"]',tk);
    await moveTo('#mdPreview .phone',tk,170,160);await wait(1800,tk);await tap('#mdCreate',tk);await wait(700,tk);await moveTo('#tkBody tr td.name',tk);await wait(2200,tk);}}
 ];
 const N=STEPS.length;
 const segs=$('#segs');
-segs.innerHTML=STEPS.map((s,i)=>`<button type="button" data-s="${i}" title="${i+1}. ${esc(s.t)}" aria-label="跳到第 ${i+1} 步：${esc(s.t)}"><i></i></button>`).join('');
+segs.innerHTML=STEPS.map((s,i)=>`<button type="button" data-s="${i}" class="${i&&s.c!==STEPS[i-1].c?'ch':''}" title="${esc(s.c)} · ${i+1}. ${esc(s.t)}" aria-label="跳到第 ${i+1} 步：${esc(s.t)}"><i></i></button>`).join('');
 segs.onclick=e=>{const b=e.target.closest('[data-s]');if(b)play(+b.dataset.s);};
-function cap(i,title,desc){curStep=i;$('#demoStep').textContent=i<N?`${i+1} / ${N}`:'完成';$('#demoTitle').textContent=title;$('#demoDesc').textContent=desc;
+function cap(i,title,desc){curStep=i;$('#demoStep').textContent=i<N?`${STEPS[i].c} · ${i+1}/${N}`:'完成';$('#demoTitle').textContent=title;$('#demoDesc').textContent=desc;
   [...segs.children].forEach((b,k)=>{b.classList.toggle('done',k<i);b.classList.toggle('cur',k===i);});}
 function setUI(){$('#blocker').classList.toggle('on',playing);cur.classList.toggle('on',playing&&!ff);$('#dPlay').hidden=!playing;$('#dPlay').textContent=paused?'继续':'暂停';$('#dSpeed').textContent=userSpeed+'×';}
 async function play(from){
