@@ -1,0 +1,660 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>定时任务交互原型</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root{--bg:#e6e9f1;--fg:#151a2d;--mute:#767d95;--line:#e2e5ef;--line2:#edeff5;--soft:#f6f7fb;--acc:#3b4cd4;--accs:#eceefc;--acc2:#c7cdf6;--pin:#c2255c;--red:#cf342c;--ok:#14874a;--org:#c0620a;--paper:#fff;--app:#f2f4f9}
+body{background:var(--bg);color:var(--fg);font:13px/1.5 Inter,'Noto Sans SC',system-ui,sans-serif;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:14px}
+button,input,textarea{font:inherit;color:inherit}
+table{font-size:inherit}
+button{background:none;border:0;padding:0;cursor:pointer;text-align:inherit}
+.pt{max-width:1720px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+.ph{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.ph h1{margin:0;font-size:18px;text-wrap:balance}
+.ph .mu{color:var(--mute)}
+.ph .sp{margin-left:auto;display:flex;gap:8px}
+.tg{display:inline-flex;align-items:center;gap:8px;height:30px;padding:0 12px;border:1px solid var(--line);border-radius:8px;background:var(--paper)}
+.tg .sw{background:#c9cdd9}.tg.on .sw{background:var(--acc)}.tg.on .sw::after{left:auto;right:2px}
+.pw{display:grid;grid-template-columns:190px minmax(0,1fr) 300px;gap:14px;align-items:start}
+.pn{display:flex;flex-direction:column;gap:2px;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:8px}
+.pn .h{font-size:11px;letter-spacing:.06em;color:var(--mute);padding:6px 10px}
+.pn button{padding:8px 10px;border-radius:8px;color:#454c66}
+.pn button:hover{background:var(--soft)}
+.pn button.on{background:var(--accs);color:var(--acc);font-weight:600}
+.sw0{min-width:0}
+.pa{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:12px;position:sticky;top:14px}
+.pa h2{margin:0;font-size:16px}
+.pa .lead{margin:0;color:var(--mute);line-height:1.6}
+.pa .ai{display:flex;gap:10px;line-height:1.55}
+.pa .ai p{margin:0}
+.pa .ai small{display:block;color:var(--mute);font-size:12px}
+.pa .off{color:var(--mute)}
+@media (max-width:1180px){.pw{grid-template-columns:minmax(0,1fr)}.pn{flex-direction:row;flex-wrap:wrap}.pn .h{display:none}.pa{position:static}}
+
+/* product screen */
+.screen{width:1180px;height:780px;background:var(--app);border:1px solid var(--line);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;position:relative;box-shadow:0 10px 30px rgba(13,24,80,.12)}
+.top{height:44px;flex:none;background:#0d1850;color:#c3cbf0;display:flex;align-items:center;gap:22px;padding:0 18px}
+.top b{color:#fff;font-size:15px;margin-right:8px}.top .on{color:#fff;font-weight:600}.top .me{margin-left:auto}
+.bx{flex:1;display:flex;min-height:0}
+.side{width:150px;flex:none;background:#fff;border-right:1px solid var(--line);padding:12px 8px;display:flex;flex-direction:column;gap:2px;color:#454c66}
+.side .it{padding:8px 10px;border-radius:8px;display:flex;align-items:center;gap:6px}
+.side .it.sb{padding-left:22px}
+.side .it.on{background:var(--accs);color:var(--acc);font-weight:600}
+.side button.it:hover{background:#f3f4fa}
+.main{flex:1;min-width:0;display:flex;flex-direction:column;min-height:0}
+.card{background:#fff;border:1px solid var(--line);border-radius:12px}
+.mu{color:var(--mute)}
+.row{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.col{display:flex;flex-direction:column;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border:1px solid var(--line);border-radius:999px;font-size:12px;color:#454c66;background:#fff;white-space:nowrap}
+button.chip:hover{border-color:var(--acc2)}
+.chip.on{border-color:var(--acc2);background:var(--accs);color:var(--acc);font-weight:600}
+.chip.xs{height:20px;font-size:11px;padding:0 7px}
+.chip.okc{background:#e8f5ee;border-color:#bfe3cd;color:var(--ok)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:30px;padding:0 14px;border-radius:8px;border:1px solid var(--line);background:#fff;color:#454c66;font-size:12.5px;white-space:nowrap}
+.btn:hover{border-color:var(--acc2)}
+.btn.p{background:var(--acc);border-color:var(--acc);color:#fff}
+.btn.p:hover{background:#2f3fbf}
+.dis{opacity:.45;cursor:not-allowed}
+.lk{color:var(--acc);font-size:12.5px}
+.lk:hover{text-decoration:underline}
+.ic{width:22px;height:22px;border-radius:6px;color:var(--mute);display:inline-flex;align-items:center;justify-content:center}
+.ic:hover{background:var(--soft);color:var(--fg)}
+.new{display:inline-flex;height:16px;padding:0 5px;border-radius:4px;background:var(--acc);color:#fff;font-size:10px;align-items:center;font-weight:500}
+.n{display:inline-flex;width:18px;height:18px;border-radius:50%;background:var(--pin);color:#fff;font-size:10.5px;font-weight:700;font-style:normal;align-items:center;justify-content:center;flex:none;box-shadow:0 0 0 3px rgba(194,37,92,.18);vertical-align:middle;line-height:1}
+.ok{display:inline-flex;width:15px;height:15px;border-radius:50%;background:var(--ok);color:#fff;font-size:9px;align-items:center;justify-content:center;flex:none}
+.av{display:inline-flex;width:24px;height:24px;border-radius:7px;background:var(--acc);color:#fff;font-size:11px;font-weight:700;align-items:center;justify-content:center;flex:none}
+.sw{display:inline-flex;width:30px;height:17px;border-radius:999px;background:var(--acc);position:relative;flex:none;transition:background .15s}
+.sw::after{content:"";position:absolute;right:2px;top:2px;width:13px;height:13px;border-radius:50%;background:#fff}
+.sw.off{background:#c9cdd9}.sw.off::after{right:auto;left:2px}
+.swr{display:inline-flex;gap:8px;align-items:center}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#fff}
+.seg button{padding:5px 13px;border-right:1px solid var(--line);font-size:12.5px}
+.seg button:last-child{border-right:0}
+.seg button.on{background:var(--acc);color:#fff}
+.seg button:not(.on):hover{background:var(--soft)}
+.inp{height:30px;border:1px solid var(--line);border-radius:8px;padding:0 10px;background:#fff;box-sizing:border-box;outline:none}
+.inp:focus,textarea:focus{border-color:var(--acc);box-shadow:0 0 0 3px var(--accs)}
+.code{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11.5px;line-height:1.6;background:#151a2d;color:#d7dcf2;border-radius:8px;padding:9px 11px;white-space:pre;overflow:auto;border:0;box-sizing:border-box}
+.code u{text-decoration:none;color:#ffd38a}
+.spin{display:inline-block;width:11px;height:11px;border:2px solid var(--acc2);border-top-color:var(--acc);border-radius:50%;animation:sp .8s linear infinite;vertical-align:-1px;margin-right:6px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.toast{position:absolute;left:50%;bottom:26px;transform:translateX(-50%);background:#151a2d;color:#fff;padding:9px 16px;border-radius:9px;font-size:12.5px;z-index:40;box-shadow:0 8px 24px rgba(0,0,0,.2);white-space:nowrap}
+
+/* home */
+.hm{flex:1;margin:14px;display:flex;flex-direction:column;align-items:center;padding:16px 24px;overflow:auto}
+.hmt{align-self:stretch;display:flex;justify-content:flex-end;gap:8px;align-items:center;color:var(--mute)}
+.hm h1{margin:110px 0 8px;font-size:28px}
+.hm>p{margin:0}
+.ib{margin-top:24px;width:720px;border:1.5px solid var(--line);border-radius:14px;background:#fff;padding:12px 14px;display:flex;flex-direction:column;gap:10px;position:relative}
+.ib.on{border-color:var(--acc2);box-shadow:0 0 0 4px var(--accs)}
+.ib textarea{border:0;resize:none;outline:none;font-size:14px;line-height:1.6;background:transparent;box-shadow:none!important}
+.ib .ibr{display:flex;gap:8px;align-items:center}
+.send{margin-left:auto;width:32px;height:32px;border-radius:50%;background:var(--acc);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:15px}
+.out{width:720px;margin-top:10px;display:flex;gap:8px;align-items:center;color:var(--mute)}
+.ex{width:720px;margin-top:16px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.exc{padding:13px 14px;display:flex;flex-direction:column;gap:5px;position:relative;text-align:left}
+.exc:hover{border-color:var(--acc2);box-shadow:0 4px 14px rgba(59,76,212,.08)}
+.exc span{color:var(--mute);line-height:1.55}
+.exc .n{position:absolute;right:-7px;top:-7px}
+
+/* chat */
+.chat{flex:1;display:flex;min-height:0;margin:12px}
+.chatl{width:370px;flex:none;display:flex;flex-direction:column;background:#fff;border:1px solid var(--line);border-right:0;border-radius:12px 0 0 12px;min-height:0}
+.msgs{flex:1;overflow:auto;padding:14px;display:flex;flex-direction:column;gap:12px}
+.ub{align-self:flex-end;max-width:300px;background:var(--accs);padding:10px 12px;border-radius:12px;display:flex;flex-direction:column;gap:8px;line-height:1.6;white-space:pre-wrap}
+.as{display:flex;gap:8px;align-items:flex-start}
+.asb{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px;line-height:1.65}
+.stp{background:var(--soft);border:1px solid var(--line2);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;line-height:1.5}
+.stp>div{display:flex;gap:8px;align-items:flex-start}
+.stp .ok{margin-top:2px}
+.cc{flex:1;min-width:0;background:#fff;border:1px solid var(--acc2);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:9px;box-shadow:0 0 0 3px var(--accs)}
+.cch{display:flex;gap:8px;align-items:center}
+.stn{font-size:12px;color:var(--acc)}
+.cf{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.cd{flex:1;background:#fff;border:1px solid var(--line);border-radius:12px;padding:8px 12px;display:flex;gap:8px;align-items:center}
+.cd .lk{margin-left:auto}
+.tps{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.tp{border:1px solid var(--line);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:2px;font-size:12px;position:relative;background:#fff}
+.tp:hover{border-color:var(--acc2)}
+.tp.on{border-color:var(--acc);background:var(--accs)}
+.tp .rec{position:absolute;right:6px;top:6px;font-size:10px;color:#fff;background:var(--acc);border-radius:4px;padding:0 5px}
+.tp .dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px}
+.rcm{position:relative}
+.dd{position:absolute;left:0;top:30px;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 26px rgba(13,24,80,.14);padding:6px;z-index:20;display:flex;flex-direction:column;min-width:170px}
+.dd button{padding:7px 10px;border-radius:6px;display:flex;justify-content:space-between;gap:10px}
+.dd button:hover{background:var(--soft)}
+.warn{color:var(--org);font-size:12px}
+.cin{border-top:1px solid var(--line2);padding:12px 14px}
+.cin div{border:1px solid var(--line);border-radius:10px;padding:9px 12px;color:#a6abbf}
+.rp{flex:1;min-width:0;background:#fff;border:1px solid var(--line);border-radius:0 12px 12px 0;display:flex;flex-direction:column;min-height:0}
+.rh{padding:11px 16px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line2)}
+.rh b{font-size:15px}
+.tabs{padding:0 16px;display:flex;gap:20px;border-bottom:1px solid var(--line2);align-items:center}
+.tabs button{padding:9px 0;border-bottom:2px solid transparent;color:var(--mute)}
+.tabs button.on{border-bottom-color:var(--acc);color:var(--acc);font-weight:600}
+.rb{flex:1;min-height:0;overflow:auto;background:var(--soft);padding:16px}
+.pvb{display:flex;gap:18px;align-items:flex-start}
+.kvs{flex:1;min-width:0;display:flex;flex-direction:column;gap:14px}
+.kv{display:grid;grid-template-columns:70px minmax(0,1fr);gap:9px 10px;line-height:1.55}
+.kv>span:nth-child(odd){color:var(--mute)}
+.setb{background:#fff;border:1px solid var(--line);border-radius:12px;padding:6px 16px}
+.fr{display:grid;grid-template-columns:110px minmax(0,1fr);gap:12px;padding:12px 0;border-bottom:1px solid var(--line2);align-items:start}
+.fr:last-child{border-bottom:0}
+.fr>label{color:#454c66;font-weight:500;display:flex;gap:6px;align-items:center;padding-top:4px}
+.hit{color:var(--red);font-weight:600}
+.miss{color:#454c66}
+.wd{border:1px solid var(--line);border-radius:10px;background:#fff;padding:8px 10px;display:flex;flex-direction:column;gap:6px}
+.wd.sel{border-color:var(--acc);box-shadow:0 0 0 3px var(--accs)}
+.wd.add{border-style:dashed;color:var(--acc);align-items:center}
+.wh{display:flex;gap:8px;align-items:center}
+.load{flex:1;display:flex;align-items:center;justify-content:center;color:var(--mute);gap:6px}
+
+/* phone & lark card */
+.phone{width:290px;flex:none;border:9px solid #1d2233;border-radius:32px;background:#eef0f5;overflow:hidden;display:flex;flex-direction:column;box-sizing:border-box}
+.fsb{background:#fff;padding:9px 11px;display:flex;gap:6px;align-items:center;font-weight:600;font-size:12px;border-bottom:1px solid var(--line)}
+.ptag{display:inline-flex;height:17px;padding:0 6px;border-radius:4px;background:var(--accs);color:var(--acc);font-size:10px;align-items:center;font-weight:500}
+.pscr{flex:1;overflow:auto;padding:9px;display:flex;flex-direction:column;gap:8px}
+.pt0{text-align:center;font-size:10.5px;color:var(--mute)}
+.fc{background:#fff;border-radius:10px;overflow:hidden;font-size:11.5px;line-height:1.55;flex:none}
+.fh{padding:9px 11px;color:#fff;display:flex;flex-direction:column;gap:1px}
+.fh small{font-size:10.5px;opacity:.92}
+.fb{padding:9px 11px;display:flex;flex-direction:column;gap:8px}
+.kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.kpis.k3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.kpi{background:var(--soft);border-radius:7px;padding:6px 8px;display:flex;flex-direction:column}
+.kpi span{color:var(--mute);font-size:10.5px}
+.kpi b{font-size:15px}
+.kpi b.sm{font-size:12px;padding-top:2px}
+.btns{display:flex;gap:6px;flex-wrap:wrap}
+.b{display:inline-flex;height:25px;padding:0 9px;border-radius:6px;border:1px solid #d9dce6;align-items:center;font-size:11px;background:#fff}
+.b:hover{border-color:#3370ff;color:#3370ff}
+.b.p{background:#3370ff;border-color:#3370ff;color:#fff}
+.b.p:hover{color:#fff;background:#245bdb}
+.ft{border-top:1px solid var(--line2);padding-top:6px;font-size:10px;color:#8b91a7}
+.cond{background:#fcebea;color:var(--red);border-radius:6px;padding:7px 8px}
+.empty{background:#fff;border:1.5px dashed #c9cdd9;border-radius:10px;padding:26px 14px;text-align:center;display:flex;flex-direction:column;gap:4px;color:#454c66}
+.spark{width:100%;display:block}
+.fb table{border-collapse:collapse;width:100%}
+.fb td,.fb th{padding:3px 3px;text-align:right;border-bottom:1px solid var(--line2);font-weight:400}
+.fb th{color:var(--mute)}
+.fb td:first-child,.fb th:first-child{text-align:left}
+.dn{color:var(--red)}
+
+/* tasks */
+.tk{flex:1;min-height:0;padding:14px;display:flex;flex-direction:column;gap:10px}
+.notice{display:flex;gap:8px;align-items:center;background:#eef1fd;border:1px solid #d5dbf8;border-radius:10px;padding:8px 12px;color:var(--acc)}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.stat{padding:10px 14px;display:flex;flex-direction:column;gap:1px;text-align:left}
+.stat:hover{border-color:var(--acc2)}
+.stat.on{border-color:var(--acc);box-shadow:0 0 0 3px var(--accs)}
+.stat b{font-size:22px}
+.stat.fix{border-color:#f2c98a;background:#fffaf1}
+.lst{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.lbar{display:flex;gap:6px;align-items:center;padding:9px 12px;border-bottom:1px solid var(--line2);flex-wrap:wrap}
+.tw{flex:1;overflow:auto}
+.tt{border-collapse:collapse;width:100%;font-size:12.5px}
+.tt th{text-align:left;color:var(--mute);font-weight:500;padding:8px 10px;background:var(--soft);border-bottom:1px solid var(--line);white-space:nowrap;position:sticky;top:0;z-index:1}
+.tt td{padding:9px 10px;border-bottom:1px solid var(--line2);vertical-align:top;line-height:1.5}
+.tt td .sub{display:block;color:var(--mute);font-size:11.5px}
+.tt tr.wn td{background:#fff8ec}
+.tt tr.of td{color:#a6abbf}
+.tt tr.hl td{animation:hl 2.4s ease-out}
+@keyframes hl{0%,40%{background:#eef1fd}100%{background:transparent}}
+.ops{display:flex;gap:10px;align-items:center;white-space:nowrap;position:relative}
+.ops .lk{font-size:12.5px}
+.tg2{display:inline-flex;height:20px;padding:0 7px;border-radius:5px;font-size:11px;align-items:center;white-space:nowrap}
+.t-push{background:#e7efff;color:#2a5bd7}.t-sub{background:#f0eafc;color:#6b3fc4}.t-rule{background:#fcebea;color:#cf342c}.t-smart{background:#fdf0e1;color:#c0620a}
+.s-ok{color:var(--ok)}.s-hit{color:var(--red)}.s-alert,.s-warn{color:var(--org)}.s-off,.s-none,.s-normal{color:var(--mute)}
+.menu{position:absolute;right:0;top:22px;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 26px rgba(13,24,80,.14);padding:5px;z-index:15;display:flex;flex-direction:column;min-width:110px}
+.menu button{padding:6px 10px;border-radius:6px;color:#454c66}
+.menu button:hover{background:var(--soft)}
+.drw{position:absolute;right:0;top:44px;bottom:0;width:380px;background:#fff;border-left:1px solid var(--line);box-shadow:-12px 0 30px rgba(13,24,80,.12);z-index:25;display:flex;flex-direction:column}
+.drw .dh{padding:12px 16px;border-bottom:1px solid var(--line2);display:flex;gap:8px;align-items:center}
+.drw .db{flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:12px;align-items:center;background:var(--soft)}
+.err{background:#fcebea;color:var(--red);border-radius:8px;padding:8px 10px;align-self:stretch}
+
+/* modal */
+.ov{position:absolute;inset:44px 0 0;background:rgba(13,24,80,.32);display:flex;align-items:center;justify-content:center;z-index:30}
+.mdl{width:1020px;height:700px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(13,24,80,.25)}
+.mh{padding:13px 20px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--line2)}
+.mb{flex:1;display:flex;min-height:0}
+.mf{flex:1;min-width:0;padding:6px 20px;overflow:auto}
+.mf .fr{grid-template-columns:84px minmax(0,1fr)}
+.mpv{width:330px;flex:none;background:var(--soft);border-left:1px solid var(--line2);padding:14px;display:flex;flex-direction:column;gap:10px;align-items:center;overflow:auto}
+.mft{padding:11px 20px;border-top:1px solid var(--line2);display:flex;gap:10px;align-items:center}
+.tp4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.tp.dis{opacity:.4;cursor:not-allowed}
+
+/* cards page & intro */
+.cg{flex:1;display:flex;gap:26px;justify-content:center;padding:16px;overflow:auto}
+.cgc{display:flex;flex-direction:column;gap:10px;align-items:center}
+.cap{display:flex;gap:8px;align-items:center;font-weight:600;font-size:14px}
+.intro{flex:1;overflow:auto;padding:30px 36px;display:grid;grid-template-columns:330px minmax(0,1fr);gap:36px;background:#f7f8fb}
+.intro h2{margin:0 0 6px;font-size:26px}
+.intro p{margin:0;line-height:1.7;color:#454c66}
+.dev{display:grid;grid-template-columns:40px minmax(0,1fr) 170px;background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden;line-height:1.6;font-size:12.5px}
+.dev>div{padding:10px 12px;border-bottom:1px solid var(--line2)}
+.dev>.hd{background:var(--soft);color:var(--mute);font-weight:600}
+.dev .k{font-size:20px;font-weight:700;color:var(--acc)}
+.pl{display:flex;flex-direction:column;background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.pl button{display:flex;gap:12px;padding:10px 14px;border-bottom:1px solid var(--line2);text-align:left}
+.pl button:hover{background:var(--soft)}
+.pl button:last-child{border-bottom:0}
+.pl b{color:var(--acc);width:20px}
+</style>
+
+<div class="pt">
+  <div class="ph">
+    <h1>定时任务 · 交互原型</h1>
+    <span class="mu">界面里的按钮、标签、开关都能点；左侧切页面</span>
+    <div class="sp">
+      <button class="tg on" id="annTg" data-act="ann"><span class="sw"></span>显示标注</button>
+      <button class="tg" data-act="reset">↺ 重置数据</button>
+    </div>
+  </div>
+  <div class="pw">
+    <nav class="pn" id="pn"></nav>
+    <div class="sw0" id="sw"><div class="screen" id="screen"></div></div>
+    <aside class="pa" id="ann"></aside>
+  </div>
+</div>
+
+<script>
+const NOW=new Date(2026,10,17,10,20);
+const BIZ='${biz_date}';
+const FQ={day:'每天',workday:'工作日',mon:'每周一',fri:'每周五',month:'每月 1 号',hour:'每小时'};
+const RC={me:'我',yy:'# 波克运营群',sj:'# 数据组群',sy:'# 商业化群',hd:'# 活动群',by:'# 捕鱼运营群'};
+let BOT;
+const T={push:{n:'定时推送',d:'到点发数据',c:'#3370ff',k:'t-push'},sub:{n:'问题订阅',d:'到点重新分析',c:'#7c4dd6',k:'t-sub'},rule:{n:'常规监控',d:'超过阈值才发',c:'#d83931',k:'t-rule'},smart:{n:'智能监控',d:'自动学正常范围',c:'#e8740c',k:'t-smart'}};
+const SENS={low:{l:'低',sig:'3σ',dates:['11-16'],range:'54,900 – 63,100',b:[24,68]},mid:{l:'中',sig:'2.5σ',dates:['11-02','11-09','11-16'],range:'56,800 – 61,200',b:[32,58]},high:{l:'高',sig:'2σ',dates:['10-24','10-27','11-02','11-05','11-09','11-12','11-16'],range:'57,600 – 60,400',b:[37,53]}};
+const CMPL={d1:'比前天',w1:'比上周同日',a7:'比近 7 天日均'};
+const CMPV={DAU:{d1:-12.4,w1:-9.8,a7:-11.1},'付费率':{d1:-3.1,w1:-1.2,a7:-2.0}};
+const DAU=[['小米',10240,10480],['华为',9820,15640],['OPPO',9110,9330],['vivo',8760,8920],['iOS',7490,8340],['官网',6890,7010]];
+const PAY=[['iOS',186400],['华为',92150],['小米',78320],['OPPO',61870],['vivo',55040],['官网',23610]];
+const SQL_DAU="SELECT dt, channel,\n  COUNT(DISTINCT uid) AS dau\nFROM dws_login_d\nWHERE dt = '2026-11-16'\nGROUP BY dt, channel";
+const SQL_PAY="SELECT channel, SUM(pay_amt) AS pay\nFROM dws_pay_d\nWHERE dt = "+BIZ+"\nGROUP BY channel ORDER BY pay DESC";
+const SQL_BAD="SELECT channel, SUM(pay_amount) AS pay\nFROM dws_pay_d\nWHERE dt >= "+BIZ+" - 6\nGROUP BY channel";
+const PRE={
+ smart:{text:'盯住 DAU 和付费率，异常了告诉我原因',name:'波克棋牌 DAU 监控',steps:['识别到要建定时任务','生成取数 SQL（DAU、付费率 2 条），试跑通过','识别到频率「每小时」','没给阈值 → 推荐智能监控，按近 4 周自动学正常范围'],freq:'hour',at:'09:00',type:'smart',rcpt:['me']},
+ rule:{text:'每小时看一下 DAU，比前天跌超 10% 就提醒我',name:'DAU 跌超 10% 提醒',steps:['识别到要建定时任务','生成取数 SQL（2 条），试跑通过','识别到频率「每小时整点」','识别到条件「DAU 比前天跌超 10%」'],freq:'hour',at:'09:00',type:'rule',rcpt:['me']},
+ push:{text:SQL_DAU+'\n每天 9 点发到运营群',name:'各渠道 DAU 日报',steps:['识别到 SQL + 定时发送','解析出 3 列：日期 / 渠道 / DAU','试跑通过，返回 84 行，用时 1.2 秒',"写死的日期 '2026-11-16' 换成 "+BIZ+"（每天取昨天）"],freq:'day',at:'09:30',type:'push',rcpt:['me','yy']}
+};
+const REC={push:'贴了 SQL，推荐定时推送',rule:'给了阈值，推荐常规监控',smart:'没给阈值，推荐智能监控'};
+const EX=[['smart','✧ 盯住指标，异常提醒','不设阈值，DAU、付费率异常了告诉我原因'],['rule','♢ 跌破阈值提醒','DAU 比前天跌超 10% 才提醒我'],['push','➤ 贴 SQL，定时发','贴一段 SQL，说每天几点、发到哪']];
+const PAGES=[['intro','00 说明 · 开发顺序'],['home','01 问数首页'],['chat:smart','02 对话建 · 智能监控'],['chat:rule','03 对话建 · 常规监控'],['chat:push','04 对话建 · 定时推送'],['tasks','05 定时任务列表'],['modal','06 手动新建任务'],['cards','07 飞书卡片']];
+
+const ANN={
+ intro:{t:'00 说明 · 开发顺序',l:'这是可点击的原型，数据都是演示用的。下次运行时间按 11-17 周二 10:20 计算。',i:[['推荐走法','01 首页点一个示例 → 发送 → 确认三张卡 → 创建 → 去 05 列表看状态 → 点「立即运行」看卡片。'],['粉色编号','对应这一栏的说明，右上角可关。'],['重置数据','回到初始状态，列表里新建的任务会清掉。']],plain:1},
+ home:{t:'01 问数首页 · 定时任务入口',l:'定时任务是一种「产出」，和飞书文档并列；不放进「选择技能」。',i:[['产出栏新增「定时任务」','带「新」。点一下选中，再点取消。'],['选中后输入框带标签','占位提示换成“贴 SQL 或说要看什么，再说什么时候发”。'],['不点也能识别','话里有频率（每天 9 点、每小时）或要盯着/提醒，自动按定时任务处理，并提示已自动打开。'],['三个示例，按推荐顺序','智能监控、常规监控、定时推送。点击只填入输入框，不直接发送。'],['工作台新增「定时任务」菜单','原「订阅任务」入口下线，旧链接跳到这里。'],['项目跟着对话','任务绑定当前对话的项目，任务里不能改项目。']]},
+ chat:{t:'02–04 对话建任务',l:'左边对话一步步确认，右边实时看会收到什么。三类任务共用这一页，差别在类型推荐和「设置」标签。',i:[['步骤条','识别意图、生成/解析 SQL、试跑、识别频率和条件，逐条出现。'],['三张确认卡','时间 → 类型 → 发给谁。确认后折叠，可点「修改」回去。'],['类型推荐','贴 SQL → 定时推送；给了阈值 → 常规监控；没阈值但要盯着 → 智能监控。随时可换。'],['右侧三个标签','卡片预览 / 设置 / 运行计划。设置内容随类型变。'],['智能监控设置','灵敏度 低/中/高 = 3σ/2.5σ/2σ；用近 30 天回放告诉用户每档会提醒几次。'],['常规监控规则','改指标、比较方式、阈值，当场试算；试试把阈值改成 15，预览会变成“这次不会发”。'],['定时推送组件','卡片由组件组成，可排序、增删；每个组件有自己的 SQL，只对创建人开放。'],['创建后动作','去列表看、发测试、加告警条件、改成智能监控。改动直接同步到任务。'],['项目锁定','随对话带入，按创建人的数据权限执行。']]},
+ tasks:{t:'05 定时任务列表',l:'四类任务一个列表。原订阅任务原样迁入，用户不需要重新设置。',i:[['合并提示','只对用过订阅任务的人显示一次。'],['四个统计','点数字筛选列表，再点取消；“需要处理”大于 0 时橙色。'],['类型 / 项目 / 搜索','类型颜色和飞书卡片头一致：推送蓝、订阅紫、常规红、智能橙。'],['来源','问数创建 / 手动创建 / 原订阅任务。今天新建的带「新」，问数创建的点「编辑」回到原对话。'],['最近一次状态','已发送 / 命中 / 告警 / 未命中不发 / 需要处理 / 已停用。'],['行操作','编辑、立即运行（马上发一次，不影响计划）；⋯ 里有复制、停用、删除。SQL 报错的行把「修 SQL」放第一个。'],['新建任务','不经过对话直接建，见 06。'],['运行结果抽屉','立即运行后从右侧滑出这次发出的卡片；修 SQL 也在这里。']]},
+ modal:{t:'06 手动新建任务',l:'从列表页「+ 新建任务」打开，表单一次填完，结果和对话建的一样。',i:[['内容来源二选一','写 SQL：到点直接跑，必须先试跑通过才能创建。写一个问题：到点重新分析（原订阅任务）。'],['类型跟着来源','SQL → 推送/常规/智能；问题 → 订阅/常规/智能。选常规多一行规则，选智能多一行灵敏度。'],['时间','五种频率 + 具体时间，当场算出下次执行时间。'],['接收人','人和群混选；群里没拉机器人时提示并给“一键拉机器人”。'],['实时预览','每改一项，右侧用昨天数据重画卡片，卡片头颜色随类型变。'],['测试发送 / 创建','测试只发给自己，不计入运行记录；创建后回到列表，新任务置顶带「新」。']]},
+ cards:{t:'07 飞书卡片',l:'同一骨架：头 → 正文 → 按钮 → 底注。不同类型只换头色、正文和按钮。卡片上的按钮也能点。',i:[['卡片头','颜色按类型；第二行写类型、结果和业务日期。'],['正文按类型','智能：当前值 + 正常范围 + 原因。常规：条件与实际值 + 降幅前 3 渠道 + 趋势。推送：可选解读 + SQL 结果表格。'],['按钮按类型','智能：展开分析 / 正常波动 / 调灵敏度。常规：追问原因 / 今天别再提醒 / 改阈值。推送：看全部数据 / 追问 / 下载 Excel。'],['底注','发给谁、按谁的数据权限执行。群里所有人看到同一张卡。'],['没命中 / 恢复正常','常规监控没命中默认不发，可选发简报；智能监控恢复正常时发一条灰卡，之后不再提醒。']]}
+};
+
+let S,timer=null,toastT=null;
+function seed(){return[
+ {id:1,name:'付费渠道周报',proj:'波克棋牌',src:'手动创建',type:'push',freq:'mon',at:'10:00',rcpt:['sy'],on:true,needFix:true,today:false,data:'pay',last:{k:'warn',t:'需要处理',s:'SQL 报错，上次改为重新分析'}},
+ {id:2,name:'昨日大盘简报',proj:'波克棋牌',src:'原订阅任务',type:'sub',freq:'day',at:'08:30',rcpt:['me','yy'],on:true,today:true,last:{k:'ok',t:'已发送 · 08:30',s:'重新分析 · 轻 BI'}},
+ {id:3,name:'捕鱼 DAU 监控',proj:'捕鱼项目',src:'手动创建',type:'smart',freq:'hour',at:'09:00',rcpt:['me','by'],on:true,today:true,last:{k:'alert',t:'告警 · 09:00',s:'DAU 低于正常范围'}},
+ {id:4,name:'付费率涨跌超 5% 提醒',proj:'波克棋牌',src:'问数创建',type:'rule',freq:'hour',at:'09:00',rcpt:['me'],on:true,today:false,metric:'付费率',thr:5,last:{k:'normal',t:'未命中 · 10:00',s:'比前天 -3.1%，未发送'}},
+ {id:5,name:'新服留存跟踪',proj:'捕鱼项目',src:'原订阅任务',type:'sub',freq:'fri',at:'18:00',rcpt:['by'],on:true,today:false,last:{k:'ok',t:'已发送 · 11-13',s:'重新分析 · 轻 BI'}},
+ {id:6,name:'捕鱼周付费汇总',proj:'捕鱼项目',src:'手动创建',type:'push',freq:'mon',at:'09:00',rcpt:['by'],on:true,today:false,data:'pay',last:{k:'ok',t:'已发送 · 11-16',s:'表格 6 行 + 合计'}},
+ {id:7,name:'双 11 活动小时数据',proj:'波克棋牌',src:'手动创建',type:'push',freq:'hour',at:'09:00',rcpt:['hd'],on:false,today:false,last:{k:'off',t:'已停用 · 11-12',s:''}}
+]}
+function init(){clearTimeout(timer);BOT={me:1,yy:1,sj:1,sy:1,hd:0,by:1};S={page:'intro',ann:true,tag:false,text:'',exk:null,flow:null,tasks:seed(),f:{type:'all',stat:null,proj:'all',q:''},notice:true,modal:null,drawer:null,menu:null,del:null,toast:'',hl:null,cv:{smart:'alert',rule:'hit',push:'table'},rcOpen:false,nid:100,sc:0}}
+
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const m=k=>S.ann?`<i class="n">${k}</i>`:'';
+const fN=n=>n.toLocaleString('en-US');
+const pc=(a,b)=>{const v=(a-b)/b*100;return (v>0?'+':'')+v.toFixed(1)+'%'};
+const p2=n=>String(n).padStart(2,'0');
+const W='日一二三四五六';
+const fmtD=d=>`${p2(d.getMonth()+1)}-${p2(d.getDate())} 周${W[d.getDay()]} ${p2(d.getHours())}:${p2(d.getMinutes())}`;
+function fmtS(d){const t=new Date(NOW);t.setHours(0,0,0,0);const x=new Date(d);x.setHours(0,0,0,0);const dd=(x-t)/864e5;const hm=`${p2(d.getHours())}:${p2(d.getMinutes())}`;return dd===0?'今天 '+hm:dd===1?'明天 '+hm:`${p2(d.getMonth()+1)}-${p2(d.getDate())} ${hm}`}
+function nextRuns(freq,at,n){n=n||5;const out=[];if(freq==='hour'){let d=new Date(NOW);d.setMinutes(0,0,0);for(let i=0;i<n;i++){d=new Date(d.getTime()+36e5);out.push(d)}return out}
+ const [h,mi]=(at||'09:00').split(':').map(Number);const d=new Date(2026,10,17,h,mi);let g=0;
+ const ok=x=>freq==='day'||(freq==='workday'&&x.getDay()>0&&x.getDay()<6)||(freq==='mon'&&x.getDay()===1)||(freq==='fri'&&x.getDay()===5)||(freq==='month'&&x.getDate()===1);
+ while(out.length<n&&g++<500){if(d>NOW&&ok(d))out.push(new Date(d));d.setDate(d.getDate()+1)}return out}
+const freqLab=(f,a)=>f==='hour'?'每小时整点':`${FQ[f]} ${a}`;
+const rcLab=rc=>rc.map(k=>RC[k]).join('、');
+const ruleV=o=>CMPV[o.metric][o.cmp];
+const ruleHit=o=>{const v=ruleV(o);return o.dir==='down'?-v>o.thr:v>o.thr};
+const condT=o=>`${o.metric} ${CMPL[o.cmp]}${o.dir==='down'?'跌超':'涨超'} ${o.thr}%`;
+function toast(msg){S.toast=msg;clearTimeout(toastT);toastT=setTimeout(()=>{S.toast='';render()},2300)}
+
+/* ---------- lark cards ---------- */
+const ft=o=>`<div class="ft">发给 ${esc(rcLab(o.rc))} · 按吉云飞的数据权限执行${o.type==='rule'?' · 同一条件 1 小时内只提醒一次':''}</div>`;
+const btns=a=>`<div class="btns">${a.map((b,i)=>`<button class="b${i?'':' p'}" data-act="cbtn" data-msg="${esc(b[1])}">${b[0]}</button>`).join('')}</div>`;
+function band(b){const[y1,y2]=b;return `<svg viewBox="0 0 280 94" class="spark" style="height:88px" aria-hidden="true"><path d="M0,${y1+2} L40,${y1} L80,${y1-1} L120,${y1+1} L160,${y1} L200,${y1-1} L240,${y1+1} L280,${y1} L280,${y2} L240,${y2+1} L200,${y2-1} L160,${y2} L120,${y2+2} L80,${y2} L40,${y2+1} L0,${y2+2} Z" fill="#fbe3cc"/><polyline points="0,46 40,45 80,43 120,47 160,44 200,42 240,46 268,80" fill="none" stroke="#3b5bd9" stroke-width="2"/><circle cx="268" cy="80" r="4" fill="#cf342c"/><text x="0" y="93" font-size="9" fill="#8b91a7">11-09</text><text x="230" y="93" font-size="9" fill="#8b91a7">11-16</text></svg>`}
+const trend=`<svg viewBox="0 0 280 60" class="spark" style="height:56px" aria-hidden="true"><line x1="0" y1="34" x2="280" y2="34" stroke="#cf342c" stroke-dasharray="4 3"/><polyline points="0,20 21,19 42,18 63,16 84,12 105,11 126,15 147,20 168,18 189,16 210,13 231,12 252,16 272,50" fill="none" stroke="#3b5bd9" stroke-width="2"/><circle cx="272" cy="50" r="3.5" fill="#cf342c"/></svg>`;
+function card(o){
+ const h=(bg,title,sub)=>`<div class="fh" style="background:${bg}"><b>${title}</b><small>${sub}</small></div>`;
+ if(o.type==='smart'){const s=SENS[o.sens||'mid'];
+  if(o.variant==='recover')return `<div class="fc">${h('#8b91a7','✓ '+esc(o.name)+' · 已恢复','智能监控 · 回到正常范围 · 11-17 14:00')}<div class="fb"><div>DAU 已回到正常范围（${s.range}），这次异常结束，之后不再提醒。</div>${btns([['看这次异常回顾','已打开这次异常从开始到恢复的回顾']])}${ft(o)}</div></div>`;
+  return `<div class="fc">${h('#e8740c','✧ '+esc(o.name),'智能监控 · 低于正常范围 · 业务日期 11-16')}<div class="fb"><div class="kpis"><div class="kpi"><span>DAU</span><b class="dn">52,310</b></div><div class="kpi"><span>正常范围</span><b class="sm">${s.range}</b></div></div>${band(s.b)}${o.why!==0?'<div><b>原因</b>　华为渠道少了 5,820 人（-37.2%），占降幅 78.5%；iOS 少 850 人（-10.2%）。其他渠道正常。</div>':''}<div class="mu">近 4 周同为周一的基线 · 灵敏度 ${s.l}</div>${btns([['展开分析','已在问数里打开这次异常的完整分析'],['正常波动','已记下：这次算正常波动，会计入基线'],['调灵敏度','已打开任务设置 · 灵敏度']])}${ft(o)}</div></div>`}
+ if(o.type==='rule'){const v=ruleV(o),hit=ruleHit(o),val=o.metric==='DAU'?'52,310':'4.6%';
+  if(!hit){if(o.miss!=='brief')return null;
+   return `<div class="fc">${h('#8b91a7',esc(o.name)+' · 简报','常规监控 · 未命中 · 业务日期 11-16')}<div class="fb"><div>条件「${condT(o)}」<b>未命中</b>，实际 ${CMPL[o.cmp]} ${v}%。</div><div class="kpis"><div class="kpi"><span>${o.metric}</span><b>${val}</b></div><div class="kpi"><span>${CMPL[o.cmp]}</span><b>${v}%</b></div></div>${ft(o)}</div></div>`}
+  const tb=o.metric==='DAU'?`<div class="mu">跌得最多的渠道</div><table><thead><tr><th>渠道</th><th>昨天</th><th>前天</th><th>变化</th></tr></thead><tbody>${[DAU[1],DAU[4],DAU[2]].map(r=>`<tr><td>${r[0]}</td><td>${fN(r[1])}</td><td>${fN(r[2])}</td><td class="${(r[1]-r[2])/r[2]<-.1?'dn':''}">${pc(r[1],r[2])}</td></tr>`).join('')}</tbody></table>`:'';
+  return `<div class="fc">${h('#d83931','⚠ '+esc(o.name),'常规监控 · 条件命中 · 业务日期 11-16')}<div class="fb"><div class="cond"><b>条件：${condT(o)}</b><div>实际：${val}，${CMPL[o.cmp]} ${v}%</div></div>${tb}<div class="mu">近 14 天 ${o.metric}</div>${trend}${btns([['追问原因','已在问数里打开：为什么 '+o.metric+' 跌了'],['今天别再提醒','好的，这条任务今天不再提醒'],['改阈值','已打开任务设置 · 规则']])}${ft(o)}</div></div>`}
+ if(o.type==='sub')return `<div class="fc">${h('#7c4dd6',esc(o.name),'问题订阅 · 重新分析 · 业务日期 11-16')}<div class="fb"><div>昨天 DAU 52,310（-12.4%），付费 49.7 万（-3.1%）；降幅主要来自华为渠道。</div><div class="kpis k3"><div class="kpi"><span>DAU</span><b>52,310</b></div><div class="kpi"><span>付费</span><b>49.7万</b></div><div class="kpi"><span>付费率</span><b>4.6%</b></div></div>${trend.replace('stroke="#cf342c" stroke-dasharray','stroke="transparent" stroke-dasharray')}${btns([['展开分析','已在问数里打开完整分析'],['追问','已在问数里接着这次分析追问']])}${ft(o)}</div></div>`;
+ // push
+ const pay=o.data==='pay';
+ const rows=pay?PAY.map(r=>`<tr><td>${r[0]}</td><td>${fN(r[1])}</td></tr>`).join('')+`<tr style="font-weight:600"><td>合计</td><td>497,390</td></tr>`:DAU.map(r=>`<tr><td>${r[0]}</td><td>${fN(r[1])}</td><td>${fN(r[2])}</td><td class="${(r[1]-r[2])/r[2]<-.1?'dn':''}">${pc(r[1],r[2])}</td></tr>`).join('')+`<tr style="font-weight:600"><td>合计</td><td>52,310</td><td>59,720</td><td>-12.4%</td></tr>`;
+ const thead=pay?'<tr><th>渠道</th><th>付费（元）</th></tr>':'<tr><th>渠道</th><th>昨天</th><th>前天</th><th>变化</th></tr>';
+ const concl=o.concl!==false?`<div>${pay?'昨天付费 49.7 万，iOS 占 37%，华为比上周少 18%。':'昨天 DAU 52,310，比前天少 12.4%，主要是华为渠道少了 5,820 人。'}<span class="mu">（模型解读）</span></div>`:'';
+ const kpi=(o.kpi||o.style==='bi')?`<div class="kpis"><div class="kpi"><span>${pay?'付费':'DAU'}</span><b>${pay?'49.7万':'52,310'}</b></div><div class="kpi"><span>比前天</span><b class="dn">${pay?'-3.1%':'-12.4%'}</b></div></div>`:'';
+ const bars=o.style==='bi'?`<svg viewBox="0 0 280 80" class="spark" style="height:76px" aria-hidden="true">${(pay?PAY.map(r=>r[1]/186400):DAU.map(r=>r[1]/10240)).map((v,i)=>`<rect x="${i*46+6}" y="${66-v*58}" width="30" height="${v*58}" rx="3" fill="${i===1&&!pay?'#cf342c':'#3b5bd9'}"/><text x="${i*46+21}" y="78" font-size="9" text-anchor="middle" fill="#8b91a7">${(pay?PAY:DAU)[i][0]}</text>`).join('')}</svg>`:'';
+ const tbl=o.style==='bi'?'':`<table><thead>${thead}</thead><tbody>${rows}</tbody></table><div class="mu">${pay?'共 6 行':'共 84 行，卡片显示前 6 行 + 合计'}</div>`;
+ return `<div class="fc">${h('#3370ff',esc(o.name),'定时推送 · 业务日期 11-16')}<div class="fb">${concl}${kpi}${bars}${tbl}${btns([['看全部数据','已打开完整结果（'+(pay?'6':'84')+' 行）'],['追问','已在问数里基于这份数据追问'],['下载 Excel','已生成 Excel，飞书里点开即可下载']])}${ft(o)}</div></div>`;
+}
+function cardOr(o){const c=card(o);return c||`<div class="empty"><b>按昨天的数据，这次不会发</b><span class="mu">「${condT(o)}」没命中，选了「不发」</span></div>`}
+function phone(inner,chat,time,hgt){chat=chat||'智能问数助手';return `<div class="phone" style="height:${hgt||580}px"><div class="fsb">‹ ${esc(chat)} <span class="ptag">${chat.startsWith('#')?'群':'机器人'}</span></div><div class="pscr"><div class="pt0">${time||'11-17 周二 10:00'}</div>${inner}</div></div>`}
+const chatOf=rc=>{const g=rc.find(k=>k!=='me');return g?RC[g]:'智能问数助手'};
+function fOpts(f){return{type:f.type,name:f.name,rc:[...f.rcpt],thr:f.thr,cmp:f.cmp,metric:f.metric,dir:f.dir,miss:f.miss,sens:f.sens,style:f.style,concl:f.comps.find(c=>c.id==='concl').on,kpi:f.comps.some(c=>c.kpi),data:'dau',why:f.so.why}}
+function tOpts(t){if(t.flow)return fOpts(t.flow);return Object.assign({type:t.type,name:t.name,rc:t.rcpt,thr:t.thr||10,cmp:'d1',metric:t.metric||'DAU',dir:'down',miss:'none',sens:t.sens||'mid',style:t.style||'table',concl:true,data:t.data||'dau',why:1},t.mo||{})}
+
+/* ---------- views ---------- */
+function vNav(){const cur=S.page==='chat'&&S.flow?'chat:'+S.flow.kind:(S.modal&&S.page==='tasks'?'modal':S.page);return '<div class="h">页面</div>'+PAGES.map(p=>`<button class="${cur===p[0]?'on':''}" data-act="nav" data-v="${p[0]}">${p[1]}</button>`).join('')}
+function vTop(){return `<div class="top"><b>DATA</b><span>系统管理</span><span>CMDB</span><span>查询系统</span><span>审批管理</span><span class="on">智能问数</span><span>更多</span><span class="me">吉云飞</span></div>`}
+function vSide(){const a=S.page==='tasks'?'t':'h';return `<div class="side"><div class="it" style="font-weight:600;color:#151a2d">问数工作台</div><button class="it sb ${a==='h'?'on':''}" data-act="go" data-v="home">智能问数</button><button class="it sb ${a==='t'?'on':''}" data-act="go" data-v="tasks">定时任务 <span class="new">新</span>${S.page==='home'?m(5):''}</button><div class="it">分析与知识</div><div class="it">数据治理</div><div class="it">MCP 管理</div><div class="it">权限管理</div></div>`}
+
+function vIntro(){const dev=[
+ ['1','地基：订阅任务升级为定时任务','任务加类型、内容来源（SQL / 问题）、各组件 SQL、规则、卡片样式；执行身份＝创建人数据权限。列表页并入原订阅任务，带启停、立即运行、最近一次状态。到点回放的问题不再混进首页历史和真题库。','05 列表<br>原订阅任务照常可用，用户无感'],
+ ['2','定时推送','对话识别「SQL ＋ 时间 ＋ 发到哪」，写死日期换成滚动变量；三张确认卡；试跑。新的到点执行入口：跑 SQL → 表格卡 → 飞书，模型只写可选解读。SQL 报错退到重新分析，列表标「需要处理」。','01、04、07<br>贴 SQL 一句话建成'],
+ ['3','常规监控','在第 2 步执行入口上加「检查」：指标 ＋ 比较方式 ＋ 阈值；命中发红卡，没命中可不发或发简报；去重；每小时检查；对话里当场试算。','03、07<br>改阈值当场看到发不发'],
+ ['4','智能监控','正常范围按近 4 周同一星期几学出；灵敏度三档，用近 30 天回放说明会提醒几次；异常时拆原因（复用贡献拆解）；防打扰。','02、07<br>回放次数与实际一致'],
+ ['5','体验补齐','轻 BI 样式、组件看板、手动新建弹窗、创建后的后续动作。可与第 3、4 步并行。','04、06<br>不经对话也能建全四类']];
+ return `<div class="intro"><div class="col" style="gap:18px"><div><div class="mu" style="font-size:12px;letter-spacing:.08em;color:var(--acc);font-weight:600">智能问数 · 产品原型</div><h2>定时任务</h2><p>到点自动取数、检查或分析，把结果发到飞书。四类：定时推送、问题订阅、常规监控、智能监控。可以在问数里一句话创建，也可以在「定时任务」页手动建；原「订阅任务」并入，显示为「问题订阅」。</p></div>
+ <div class="pl">${PAGES.slice(1).map((p,i)=>`<button data-act="nav" data-v="${p[0]}"><b>0${i+1}</b><span>${p[1].slice(3)}</span><span class="mu" style="margin-left:auto">去看 ›</span></button>`).join('')}</div>
+ <button class="btn p" data-act="nav" data-v="home" style="align-self:flex-start">从首页开始走一遍 ›</button></div>
+ <div class="col" style="gap:10px;min-width:0"><div class="row" style="align-items:baseline"><b style="font-size:18px">开发顺序</b><span class="mu">后一步依赖前一步；每步挂 JYF_日期 开关，预发验完再去开关</span></div>
+ <div class="dev"><div class="hd">步骤</div><div class="hd">做什么</div><div class="hd">对应页面 · 上线标准</div>${dev.map(d=>`<div class="k">${d[0]}</div><div><b>${d[1]}</b><br>${d[2]}</div><div class="mu">${d[3]}</div>`).join('')}</div></div></div>`}
+
+function vHome(){return `<div class="hm card"><div class="hmt">当前项目 <span class="chip">波克棋牌 ▾</span>${m(6)}</div>
+ <h1>今天想看哪些数据？</h1><p class="mu">直接提问；想让数据按时发到飞书、或者盯着指标异常提醒，点输入框下方「产出」里的「定时任务」。</p>
+ <div class="ib ${S.tag?'on':''}"><textarea id="homeText" rows="3" placeholder="${S.tag?'贴 SQL 或说要看什么，再说什么时候发。例如：每天 9 点发到运营群':'问点什么，例如：昨天 DAU 为什么跌了'}">${esc(S.text)}</textarea>
+ <div class="ibr"><span class="chip">Auto ▾</span><span class="chip">▤ 波克棋牌</span><span class="chip">✦ 选择技能</span>${S.tag?`<button class="chip on" data-act="tag">◷ 定时任务 ×</button>${m(2)}`:''}<button id="sendBtn" class="send ${S.text.trim()?'':'dis'}" data-act="send" aria-label="发送">↑</button></div></div>
+ <div class="out">产出：<span class="chip">飞书文档</span><button class="chip ${S.tag?'on':''}" data-act="tag">◷ 定时任务 <span class="new">新</span></button>${m(1)}<span style="margin-left:14px" class="row">不点也能识别 ${m(3)}</span></div>
+ <div class="ex">${EX.map((e,i)=>`<button class="card exc" data-act="ex" data-v="${e[0]}"><b>${e[1]}</b><span>${e[2]}</span>${i===2?m(4):''}</button>`).join('')}</div></div>`}
+
+function startFlow(kind,text,auto){const p=PRE[kind];clearTimeout(timer);
+ S.flow={kind,text:text||p.text,name:p.name,steps:(auto?['已自动打开「产出 · 定时任务」']:[]).concat(p.steps),shown:0,stage:0,freq:p.freq,at:p.at,type:p.type,rcpt:new Set(p.rcpt),tab:'pv',sens:'mid',thr:10,cmp:'d1',metric:'DAU',dir:'down',miss:'none',style:'table',comps:[{id:'concl',name:'结论',kind:'模型写',on:true},{id:'tbl',name:'各渠道 DAU',kind:'表格 · 你的 SQL'}],sqlOpen:null,created:false,so:{why:1,dedup:1,twice:1,recover:1},mets:{DAU:1,'付费率':kind==='smart'?1:0,'新增':0},kc:0};
+ S.page='chat';S.rcOpen=false;S.sc=1;tick()}
+function tick(){clearTimeout(timer);const f=S.flow;if(!f)return;if(f.shown>=f.steps.length){if(f.stage===0){f.stage=1;S.sc=1;render()}return}
+ timer=setTimeout(()=>{if(S.flow!==f||S.page!=='chat')return;f.shown++;S.sc=1;render();tick()},430)}
+
+function ub(f){if(f.text===PRE.push.text){return `<div class="ub"><div class="code">${esc(SQL_DAU).replace("'2026-11-16'","<u>'2026-11-16'</u>")}</div><div>每天 9 点发到运营群</div></div>`}return `<div class="ub">${esc(f.text)}</div>`}
+function introT(f){if(f.type==='smart')return '没给阈值，我按近 4 周同一星期几学出 DAU 的正常范围。按昨天的数据<b class="hit">会提醒</b>，右边就是会收到的卡片。';
+ if(f.type==='rule')return ruleHit(f)?`按昨天的数据试算，「${condT(f)}」<b class="hit">会命中</b>，右边就是会收到的告警卡。`:`按昨天的数据试算，「${condT(f)}」<b>不会命中</b>${f.miss==='brief'?'，会照常发一份简报':'，这次不会发'}。`;
+ if(f.type==='push')return '试跑通过，右边是卡片预览。确认下面 3 项就能创建。';
+ return '到点用你的问题重新分析一遍，发轻 BI 卡片。'}
+const doneLine=(f,s,html)=>`<div class="as"><span class="av">问</span><div class="cd"><span class="ok">✓</span><span>${html}</span>${f.created?'':`<button class="lk" data-act="back" data-v="${s}">修改</button>`}</div></div>`;
+function cTime(f){const verb=(f.type==='push'||f.type==='sub')?'发':'检查';
+ if(f.stage>1)return doneLine(f,1,`${verb === '发'?'发送':'检查'}时间：<b>${freqLab(f.freq,f.at)}</b>`);
+ return `<div class="as"><span class="av">问</span><div class="cc"><div class="cch"><b class="stn">1 / 3</b><b>什么时候${verb}？</b>${m(2)}</div>
+ <div class="row">${['day','workday','mon','month','hour'].map(k=>`<button class="chip ${f.freq===k?'on':''}" data-act="freq" data-v="${k}">${FQ[k]}</button>`).join('')}</div>
+ ${f.freq==='hour'?'<div class="mu">每小时整点一次</div>':`<div class="row">${['08:30','09:00','09:30','10:00'].map(t=>`<button class="chip ${f.at===t?'on':''}" data-act="at" data-v="${t}">${t}</button>`).join('')}${f.kind==='push'?'<span class="mu">数据 9:10 前到齐，建议 9:30</span>':''}</div>`}
+ <div class="mu">下次：${fmtD(nextRuns(f.freq,f.at,1)[0])}</div><div class="cf"><button class="btn p" data-act="next">确认</button></div></div></div>`}
+function typeExtra(f){if(f.type==='rule')return `规则：${condT(f)}　<button class="lk" data-act="tab" data-v="set">去右侧改</button>`;
+ if(f.type==='smart')return `灵敏度：${SENS[f.sens].l}（近 30 天会提醒 ${SENS[f.sens].dates.length} 次）　<button class="lk" data-act="tab" data-v="set">去右侧调</button>`;
+ if(f.type==='push')return `卡片样式：${f.style==='table'?'表格':'轻 BI'}　<button class="lk" data-act="tab" data-v="set">去右侧改</button>`;
+ return '到点用你的问题重新分析，发轻 BI 卡片'}
+function cType(f){if(f.stage>2)return doneLine(f,2,`类型：<b>${T[f.type].n}</b>`);
+ const rec=PRE[f.kind].type;
+ return `<div class="as"><span class="av">问</span><div class="cc"><div class="cch"><b class="stn">2 / 3</b><b>哪种任务？</b>${m(3)}<span class="chip on xs" style="margin-left:auto">${REC[rec]}</span></div>
+ <div class="tps">${['push','sub','rule','smart'].map(k=>`<button class="tp ${f.type===k?'on':''}" data-act="type" data-v="${k}">${k===rec?'<span class="rec">推荐</span>':''}<b><span class="dot" style="background:${T[k].c}"></span>${T[k].n}</b><span class="mu">${T[k].d}</span></button>`).join('')}</div>
+ <div class="mu" style="background:var(--soft);border-radius:8px;padding:8px 10px">${typeExtra(f)}</div>
+ <div class="cf"><button class="btn" data-act="back" data-v="1">上一步</button><button class="btn p" data-act="next">确认</button></div></div></div>`}
+function cRcpt(f){const base=['me','yy','sj'];const all=[...new Set(base.concat([...f.rcpt]))];const nob=[...f.rcpt].filter(k=>!BOT[k]);
+ if(f.stage>3)return doneLine(f,3,`发给：<b>${esc(rcLab([...f.rcpt]))}</b>`);
+ return `<div class="as"><span class="av">问</span><div class="cc"><div class="cch"><b class="stn">3 / 3</b><b>发给谁？</b>${m(2)}</div>
+ <div class="row">${all.map(k=>`<button class="chip ${f.rcpt.has(k)?'on':''}" data-act="rc" data-v="${k}">${RC[k]}</button>`).join('')}<span class="rcm"><button class="chip" data-act="rcadd">+ 搜人或群</button>${S.rcOpen?`<span class="dd">${['sy','hd','by'].filter(k=>!all.includes(k)).map(k=>`<button data-act="rcpick" data-v="${k}"><span>${RC[k]}</span><span class="mu">${BOT[k]?'已有机器人':'没有机器人'}</span></button>`).join('')||'<span class="mu" style="padding:7px 10px">没有更多了</span>'}</span>`:''}</span></div>
+ ${nob.map(k=>`<div class="warn">「${RC[k]}」还没拉「智能问数助手」机器人，发不进去　<button class="lk" data-act="bot" data-v="${k}">一键拉机器人</button></div>`).join('')}
+ <div class="mu">群里需要先拉「智能问数助手」机器人</div>
+ <div class="cf"><button class="btn" data-act="back" data-v="2">上一步</button><button class="btn" data-act="test">发测试给我</button><button class="btn p ${(!f.rcpt.size||nob.length)?'dis':''}" data-act="create">创建任务</button></div></div></div>`}
+function cDone(f){const nx=fmtD(nextRuns(f.freq,f.at,1)[0]);const acts=[['gotasks','去「定时任务」看看'],['test','发测试给我']];
+ if(f.type!=='rule')acts.push(['chtype','加告警条件','rule']);if(f.type!=='smart')acts.push(['chtype','改成智能监控','smart']);if(f.type!=='push'&&f.kind==='push')acts.push(['chtype','改回定时推送','push']);
+ return `<div class="as"><span class="av">问</span><div class="asb"><div>已创建「${esc(f.name)}」，下次 ${nx}。还可以：${m(8)}</div><div class="row">${acts.map(a=>`<button class="chip ${a[0]==='gotasks'?'on':''}" data-act="${a[0]}" data-v="${a[2]||''}">${a[1]}</button>`).join('')}</div></div></div>`}
+function vChat(){const f=S.flow;const done=f.shown>=f.steps.length;
+ const left=`<div class="chatl"><div class="msgs" id="msgs">${ub(f)}
+ <div class="as"><span class="av">问</span><div class="asb"><div class="stp">${f.steps.slice(0,f.shown).map((s,i)=>`<div><span class="ok">✓</span><span>${esc(s)}${i===f.steps.length-1?m(1):''}</span></div>`).join('')}${done?'':'<div class="mu"><span class="spin"></span>处理中…</div>'}</div>${done?`<div>${introT(f)}</div>`:''}</div></div>
+ ${f.stage>=1?cTime(f):''}${f.stage>=2?cType(f):''}${f.stage>=3?cRcpt(f):''}${f.stage>=4?cDone(f):''}</div>
+ <div class="cin"><div>继续说，比如“改成每天 10 点”</div></div></div>`;
+ return `<div class="chat">${left}${vRight(f,done)}</div>`}
+function vRight(f,done){const st=f.created?'<span class="chip okc">运行中</span>':'<span class="chip">草稿 · 还没创建</span>';
+ const head=`<div class="rh"><b>${esc(f.name)}</b><span class="chip" style="margin-left:auto">🔒 项目 波克棋牌 · 随对话带入</span>${m(9)}${st}</div>`;
+ if(!done)return `<div class="rp">${head}<div class="load"><span class="spin"></span>正在生成任务预览…</div></div>`;
+ const SETL={push:'组件与 SQL',sub:'问题',rule:'规则',smart:'智能监控设置'};
+ const tabs=`<div class="tabs">${[['pv','飞书卡片预览'],['set',SETL[f.type]],['plan','运行计划']].map(t=>`<button class="${f.tab===t[0]?'on':''}" data-act="tab" data-v="${t[0]}">${t[1]}</button>`).join('')}${m(4)}${f.created?'<span class="mu" style="margin-left:auto;font-size:12px">改动自动保存</span>':''}</div>`;
+ let body;
+ if(f.tab==='pv'){const o=fOpts(f);const nx=nextRuns(f.freq,f.at,1)[0];
+  const data=f.kind==='push'?'你贴的 SQL · 已试跑 · 日期用 '+BIZ:'从你的话生成 SQL（2 条）· 已试跑';
+  const comp={smart:'当前值 + 正常范围 + 趋势 + 原因',rule:'命中条件 + 降幅前 3 渠道 + 趋势',push:f.style==='table'?'结论（可选）+ 表格':'指标卡 + 柱图',sub:'结论 + 指标卡 + 趋势'}[f.type];
+  body=`<div class="pvb">${phone(cardOr(o),chatOf([...f.rcpt]),fmtD(nx),600)}<div class="kvs"><div class="col" style="gap:2px"><span class="mu">下一次${f.type==='push'||f.type==='sub'?'发送':'检查'}</span><b style="font-size:22px">${fmtD(nx)}</b><span class="mu">${freqLab(f.freq,f.at)}${f.type==='rule'||f.type==='smart'?' · 有异常才发':''}</span></div>
+  <div class="kv"><span>类型</span><span>${T[f.type].n}</span><span>发给</span><span>${esc(rcLab([...f.rcpt]))}</span><span>数据</span><span>${data}</span><span>执行身份</span><span>吉云飞的数据权限</span><span>卡片组成</span><span>${comp}</span></div>
+  <div class="mu" style="line-height:1.6">预览用昨天的数据实时生成；改左边或「${SETL[f.type]}」里的设置，这里跟着变。</div></div></div>`}
+ else if(f.tab==='plan'){body=`<div class="setb"><div class="fr"><label>频率</label><div>${freqLab(f.freq,f.at)}</div></div><div class="fr"><label>接下来 5 次</label><div class="col">${nextRuns(f.freq,f.at,5).map(d=>`<div>${fmtD(d)}</div>`).join('')}</div></div><div class="fr"><label>每次运行</label><div class="mu" style="line-height:1.6">取数 → ${{push:'出表格',rule:'对比阈值',smart:'对比正常范围',sub:'重新分析'}[f.type]} → 发卡片。失败自动重试 2 次，仍失败在列表标「需要处理」。</div></div><div class="fr"><label>执行身份</label><div>吉云飞的数据权限 · 项目 波克棋牌</div></div></div>`}
+ else body=vSet(f);
+ return `<div class="rp">${head}${tabs}<div class="rb">${body}</div></div>`}
+function vSet(f){
+ if(f.type==='smart'){const s=SENS[f.sens];const sw=(k,l)=>`<button class="swr" data-act="so" data-v="${k}"><span class="sw ${f.so[k]?'':'off'}"></span>${l}</button>`;
+  return `<div class="setb"><div class="fr"><label>盯哪些指标</label><div class="row">${Object.keys(f.mets).map(k=>`<button class="chip ${f.mets[k]?'on':''}" data-act="smet" data-v="${k}">${k}</button>`).join('')}</div></div>
+  <div class="fr"><label>灵敏度 ${m(5)}</label><div class="col"><div class="seg">${['low','mid','high'].map(k=>`<button class="${f.sens===k?'on':''}" data-act="sens" data-v="${k}">${SENS[k].l}</button>`).join('')}</div><span class="mu">${s.sig} · 越高越容易提醒</span></div></div>
+  <div class="fr"><label>近 30 天回放</label><div class="col"><span>按这个灵敏度，近 30 天会提醒 <b class="hit">${s.dates.length} 次</b>：${s.dates.join('、')}</span><span class="mu">用过去 30 天真实数据算出来的，帮你判断会不会太吵</span></div></div>
+  <div class="fr"><label>正常范围</label><div style="max-width:420px">${band(s.b)}<div class="mu">${s.range} · 按近 4 周同一星期几学出，节假日单独基准</div></div></div>
+  <div class="fr"><label>提醒时</label><div class="col">${sw('why','异常时拆原因（渠道 / 新老用户 / 机型）')}${sw('dedup','同一指标 6 小时内只提醒一次')}${sw('twice','连续两次异常才提醒')}${sw('recover','恢复正常时发一条')}</div></div></div>`}
+ if(f.type==='rule'){const v=ruleV(f),hit=ruleHit(f);
+  return `<div class="setb"><div class="fr"><label>指标</label><div class="seg">${['DAU','付费率'].map(k=>`<button class="${f.metric===k?'on':''}" data-act="metric" data-v="${k}">${k}</button>`).join('')}</div></div>
+  <div class="fr"><label>比较</label><div class="seg">${Object.keys(CMPL).map(k=>`<button class="${f.cmp===k?'on':''}" data-act="cmp" data-v="${k}">${CMPL[k]}</button>`).join('')}</div></div>
+  <div class="fr"><label>条件 ${m(6)}</label><div class="row"><div class="seg">${[['down','跌超'],['up','涨超']].map(k=>`<button class="${f.dir===k[0]?'on':''}" data-act="dir" data-v="${k[0]}">${k[1]}</button>`).join('')}</div><button class="btn" data-act="thr" data-v="-1" style="padding:0 10px">−</button><input id="thr" class="inp" value="${f.thr}" inputmode="numeric" style="width:56px;text-align:center"><button class="btn" data-act="thr" data-v="1" style="padding:0 10px">＋</button>%</div></div>
+  <div class="fr"><label>当场试算</label><div class="col"><span class="${hit?'hit':'miss'}">${hit?'●':'○'} 按昨天：${f.metric} ${CMPL[f.cmp]} ${v}%，${hit?'会命中，会发告警卡':`没到「${condT(f)}」，${f.miss==='brief'?'会发简报':'这次不会发'}`}</span><span class="mu">试试把阈值改成 15，看左边预览</span></div></div>
+  <div class="fr"><label>没命中时</label><div class="seg">${[['none','不发'],['brief','照常发简报']].map(k=>`<button class="${f.miss===k[0]?'on':''}" data-act="miss" data-v="${k[0]}">${k[1]}</button>`).join('')}</div></div>
+  <div class="fr"><label>防打扰</label><div class="mu">同一条件 1 小时内只提醒一次</div></div></div>`}
+ if(f.type==='push'){
+  return `<div class="setb"><div class="fr"><label>卡片样式</label><div class="col"><div class="seg">${[['table','表格'],['bi','轻 BI']].map(k=>`<button class="${f.style===k[0]?'on':''}" data-act="style" data-v="${k[0]}">${k[1]}</button>`).join('')}</div><span class="mu">只有定时推送可选；贴 SQL 默认表格</span></div></div>
+  <div class="fr"><label>组件 ${m(7)}</label><div class="col">${f.comps.map((c,i)=>`<div class="wd ${f.sqlOpen===c.id?'sel':''}"><div class="wh"><span class="mu">⋮⋮</span><b>${c.name}</b><span class="chip xs">${c.kind}</span><span class="row" style="margin-left:auto;gap:2px">${c.id==='concl'?`<button class="swr" data-act="concl" aria-label="开关"><span class="sw ${c.on?'':'off'}"></span></button>`:`<button class="lk" data-act="sql" data-v="${c.id}" style="margin-right:6px">${f.sqlOpen===c.id?'收起 SQL':'查看 SQL ›'}</button>`}<button class="ic" data-act="mv" data-v="${i}" data-d="-1" aria-label="上移">↑</button><button class="ic" data-act="mv" data-v="${i}" data-d="1" aria-label="下移">↓</button>${c.kpi?`<button class="ic" data-act="rmc" data-v="${i}" aria-label="删除">×</button>`:''}</span></div>
+  ${f.sqlOpen===c.id?`<div class="code">${c.kpi?'SELECT COUNT(DISTINCT uid) AS dau\nFROM dws_login_d\nWHERE dt = <u>'+BIZ+'</u>':esc(SQL_DAU).replace("'2026-11-16'",'<u>'+BIZ+'</u>')}</div><div class="row"><span class="chip">${BIZ} = 昨天</span><button class="chip" data-act="sqlrun">试跑</button><span class="mu">只有创建人能看、能改；接收人只看到卡片</span></div>`:''}</div>`).join('')}<button class="wd add" data-act="addc">+ 加组件（指标卡）</button></div></div>
+  <div class="fr"><label>SQL 报错时</label><div class="mu" style="line-height:1.6">先按任务名重新分析一次，卡片标“本次为重新分析结果”；列表页标「需要处理」，提醒创建人修 SQL。</div></div></div>`}
+ return `<div class="setb"><div class="fr"><label>问题</label><div>${esc(f.text)}</div></div><div class="fr"><label>卡片样式</label><div>轻 BI（固定）</div></div></div>`}
+
+/* tasks */
+function statOk(t,s){return s==='on'?t.on:s==='sent'?(t.today&&['ok','hit','alert'].includes(t.last.k)):s==='alert'?(t.today&&['hit','alert'].includes(t.last.k)):t.needFix}
+function vTasks(){const f=S.f,ts=S.tasks;
+ const vis=ts.filter(t=>(f.type==='all'||t.type===f.type)&&(f.proj==='all'||t.proj===f.proj)&&(!f.q||t.name.includes(f.q))&&(!f.stat||statOk(t,f.stat)));
+ const cnt=s=>ts.filter(t=>statOk(t,s)).length;const al=ts.filter(t=>statOk(t,'alert'));
+ const stats=[['on','运行中',cnt('on'),`共 ${ts.length} 个，停用 ${ts.filter(t=>!t.on).length}`],['sent','今天已发送',cnt('sent'),'下一个 11:00'],['alert','今天告警',al.length,`常规 ${al.filter(t=>t.type==='rule').length} · 智能 ${al.filter(t=>t.type==='smart').length}`],['fix','需要处理',cnt('fix'),cnt('fix')?'SQL 报错':'都正常']];
+ const tc=k=>k==='all'?ts.length:ts.filter(t=>t.type===k).length;
+ let firstSrc=true;
+ const rows=vis.map(t=>{const sub=t.src==='问数创建'&&firstSrc?(firstSrc=false,m(4)):'';
+  if(S.del===t.id)return `<tr><td colspan="8"><div class="row" style="justify-content:space-between"><span>删除「<b>${esc(t.name)}</b>」？删除后不再发送，接收人不会收到通知。</span><span class="row"><button class="btn" data-act="delno">取消</button><button class="btn p" style="background:var(--red);border-color:var(--red)" data-act="delok" data-v="${t.id}">删除</button></span></div></td></tr>`;
+  const nx=t.on?fmtS(nextRuns(t.freq,t.at,1)[0]):'—';
+  return `<tr class="${t.needFix?'wn':''} ${!t.on?'of':''} ${S.hl===t.id?'hl':''}"><td><b>${esc(t.name)}</b> ${t.isNew?'<span class="new">新</span>':''}<span class="sub">${t.proj} · ${t.src} ${sub}</span></td>
+  <td><span class="tg2 ${T[t.type].k}">${T[t.type].n}</span></td><td>${t.freq==='hour'?'每小时':FQ[t.freq]+' '+t.at}</td><td>${nx}</td>
+  <td><span class="s-${t.last.k}">● ${t.last.t}</span>${t.last.s?`<span class="sub">${t.last.s}${t.needFix?m(5):''}</span>`:''}</td>
+  <td>${esc(RC[t.rcpt[0]]||'—')}${t.rcpt.length>1?' +'+(t.rcpt.length-1):''}</td>
+  <td><button class="swr" data-act="sw" data-v="${t.id}" aria-label="启用"><span class="sw ${t.on?'':'off'}"></span></button></td>
+  <td><div class="ops">${t.needFix?`<button class="lk" style="color:var(--org);font-weight:600" data-act="fix" data-v="${t.id}">修 SQL</button>`:`<button class="lk" data-act="edit" data-v="${t.id}">编辑</button>`}<button class="lk ${t.on?'':'dis'}" data-act="run" data-v="${t.id}">立即运行</button><button class="lk" data-act="menu" data-v="${t.id}">⋯</button>
+  ${S.menu===t.id?`<div class="menu">${t.needFix?`<button data-act="edit" data-v="${t.id}">编辑</button>`:''}<button data-act="mcopy" data-v="${t.id}">复制</button><button data-act="sw" data-v="${t.id}">${t.on?'停用':'启用'}</button><button data-act="mdel" data-v="${t.id}" style="color:var(--red)">删除</button></div>`:''}</div></td></tr>`}).join('');
+ return `<div class="tk"><div class="row" style="flex-wrap:nowrap"><b style="font-size:18px">定时任务</b><span class="mu">到点取数、检查或分析，发到飞书</span><button class="btn p" style="margin-left:auto" data-act="newt">+ 新建任务</button>${m(7)}</div>
+ ${S.notice?`<div class="notice">ⓘ 原「订阅任务」已并入这里，显示为「问题订阅」，设置和接收人不变。<button class="lk" style="margin-left:auto" data-act="notice">知道了</button>${m(1)}</div>`:''}
+ <div class="stats">${stats.map((s,i)=>`<button class="card stat ${f.stat===s[0]?'on':''} ${s[0]==='fix'&&s[2]?'fix':''}" data-act="stat" data-v="${s[0]}"><span class="mu">${s[1]}${i===3?' '+m(2):''}</span><b style="color:${s[0]==='alert'&&s[2]?'var(--red)':s[0]==='fix'&&s[2]?'var(--org)':'inherit'}">${s[2]}</b><span class="mu">${s[3]}</span></button>`).join('')}</div>
+ <div class="card lst"><div class="lbar">${['all','push','sub','rule','smart'].map(k=>`<button class="chip ${f.type===k?'on':''}" data-act="ftype" data-v="${k}">${k==='all'?'全部':T[k].n} ${tc(k)}</button>`).join('')}${m(3)}
+ <span class="row" style="margin-left:auto"><span class="seg">${['all','波克棋牌','捕鱼项目'].map(k=>`<button class="${f.proj===k?'on':''}" data-act="fproj" data-v="${k}">${k==='all'?'全部项目':k}</button>`).join('')}</span><input id="q" class="inp" placeholder="搜索任务名" value="${esc(f.q)}" style="width:150px"></span></div>
+ <div class="tw"><table class="tt"><thead><tr><th>任务</th><th>类型</th><th>时间</th><th>下次</th><th>最近一次</th><th>发给</th><th>启用</th><th>操作 ${m(6)}</th></tr></thead><tbody>${rows||`<tr><td colspan="8" class="mu" style="text-align:center;padding:40px">没有符合条件的任务　<button class="lk" data-act="clearf">清除筛选</button></td></tr>`}</tbody></table></div>
+ <div class="mu" style="padding:9px 12px;border-top:1px solid var(--line2)">共 ${vis.length} 条${f.stat||f.type!=='all'||f.proj!=='all'||f.q?'（已筛选）':''}</div></div></div>`}
+function vDrawer(){const d=S.drawer,t=S.tasks.find(x=>x.id===d.id);if(!t)return '';
+ if(d.mode==='sql'){return `<div class="drw"><div class="dh"><b>修 SQL · ${esc(t.name)}</b>${m(8)}<button class="ic" style="margin-left:auto" data-act="dclose" aria-label="关闭">×</button></div><div class="db" style="align-items:stretch">
+ <div class="err">上次运行报错：Unknown column 'pay_amount' in 'field list'（11-16 10:00）</div>
+ <div class="code">${esc(d.fixed?SQL_PAY:SQL_BAD)}</div>
+ ${d.fixed?'':`<div class="mu">表里的字段叫 <b>pay_amt</b>，日期写法也有问题。</div><button class="btn" data-act="dfix" style="align-self:flex-start">按提示改好</button>`}
+ <div class="row"><button class="btn" data-act="drun">试跑</button>${d.ran?'<span class="s-ok">✓ 返回 6 行 · 0.8 秒</span>':''}</div>
+ <div class="mu" style="line-height:1.6">报错期间系统按任务名重新分析发送，卡片上标了“本次为重新分析结果”。修好后下次按 SQL 正常执行。</div>
+ <div class="row" style="justify-content:flex-end"><button class="btn" data-act="dclose">取消</button><button class="btn p ${d.ran?'':'dis'}" data-act="dsave">保存</button></div></div></div>`}
+ const o=tOpts(t);
+ return `<div class="drw"><div class="dh"><b>${esc(t.name)} · 刚刚运行</b>${m(8)}<button class="ic" style="margin-left:auto" data-act="dclose" aria-label="关闭">×</button></div><div class="db">${phone(cardOr(o),chatOf(t.rcpt),'11-17 周二 10:21',600)}<div class="mu">这次是手动运行，不影响原定计划（下次 ${fmtS(nextRuns(t.freq,t.at,1)[0])}）。</div></div></div>`}
+
+/* modal */
+function mDefault(){return{edit:null,src:'sql',sql:SQL_PAY,ran:false,q:'昨天大盘怎么样，哪里变化最大',type:'push',style:'table',thr:10,sens:'mid',freq:'mon',at:'10:00',rcpt:new Set(['me','sy']),name:'付费渠道周报'}}
+function mOpts(M){return{type:M.type,name:M.name||'未命名任务',rc:[...M.rcpt],thr:M.thr,cmp:'d1',metric:'DAU',dir:'down',miss:'none',sens:M.sens,style:M.style,concl:true,data:M.src==='sql'?'pay':'dau',why:1}}
+function vModal(){const M=S.modal;const allow=M.src==='sql'?['push','rule','smart']:['sub','rule','smart'];const nob=[...M.rcpt].filter(k=>!BOT[k]);
+ return `<div class="ov"><div class="card mdl"><div class="mh"><b style="font-size:16px">${M.edit?'编辑定时任务':'新建定时任务'}</b><span class="mu">也可以在问数里直接说，例如“每天 9 点把这段 SQL 发到运营群”</span><button class="ic" style="margin-left:auto;font-size:16px" data-act="mclose" aria-label="关闭">×</button></div>
+ <div class="mb"><div class="mf">
+ <div class="fr"><label>项目</label><div class="row"><span class="inp" style="display:inline-flex;align-items:center;width:180px">波克棋牌 ▾</span><span class="mu">按你在这个项目里的数据权限执行</span></div></div>
+ <div class="fr"><label>内容来源 ${m(1)}</label><div class="col"><div class="seg" style="align-self:flex-start"><button class="${M.src==='sql'?'on':''}" data-act="msrc" data-v="sql">写 SQL</button><button class="${M.src==='q'?'on':''}" data-act="msrc" data-v="q">写一个问题</button></div>
+ ${M.src==='sql'?`<textarea id="mSql" class="code" rows="4" spellcheck="false" style="width:100%;resize:vertical">${esc(M.sql)}</textarea><div class="row"><button class="btn" data-act="mrun">试跑</button>${M.ran?'<span class="s-ok">✓ 返回 6 行 · 0.8 秒</span>':'<span class="mu">先试跑通过才能创建</span>'}<span class="mu" style="margin-left:auto">${BIZ} = 昨天</span></div>`:`<input id="mQ" class="inp" style="width:100%" value="${esc(M.q)}"><span class="mu">到点用这个问题重新分析</span>`}</div></div>
+ <div class="fr"><label>类型 ${m(2)}</label><div class="tp4">${['push','sub','rule','smart'].map(k=>{const ok=allow.includes(k);return `<button class="tp ${M.type===k?'on':''} ${ok?'':'dis'}" data-act="mtype" data-v="${k}"><b><span class="dot" style="background:${T[k].c}"></span>${T[k].n}</b><span class="mu">${ok?T[k].d:(k==='push'?'需选「写 SQL」':'需选「写一个问题」')}</span></button>`}).join('')}</div></div>
+ ${M.type==='push'?`<div class="fr"><label>卡片样式</label><div class="seg" style="justify-self:start">${[['table','表格'],['bi','轻 BI']].map(k=>`<button class="${M.style===k[0]?'on':''}" data-act="mstyle" data-v="${k[0]}">${k[1]}</button>`).join('')}</div></div>`:''}
+ ${M.type==='rule'?`<div class="fr"><label>规则</label><div class="row">DAU 比前天跌超 <button class="btn" data-act="mthr" data-v="-1" style="padding:0 10px">−</button><b style="width:28px;text-align:center">${M.thr}</b><button class="btn" data-act="mthr" data-v="1" style="padding:0 10px">＋</button>%<span class="${ruleHit(Object.assign(mOpts(M),{}))?'hit':'miss'}" style="margin-left:8px">${ruleHit(mOpts(M))?'按昨天会命中':'按昨天不会发'}</span></div></div>`:''}
+ ${M.type==='smart'?`<div class="fr"><label>灵敏度</label><div class="row"><div class="seg">${['low','mid','high'].map(k=>`<button class="${M.sens===k?'on':''}" data-act="msens" data-v="${k}">${SENS[k].l}</button>`).join('')}</div><span class="mu">近 30 天会提醒 ${SENS[M.sens].dates.length} 次</span></div></div>`:''}
+ <div class="fr"><label>时间 ${m(3)}</label><div class="col"><div class="row">${['day','workday','mon','month','hour'].map(k=>`<button class="chip ${M.freq===k?'on':''}" data-act="mfreq" data-v="${k}">${FQ[k]}</button>`).join('')}</div>${M.freq==='hour'?'':`<div class="row">${['08:30','09:00','09:30','10:00'].map(t=>`<button class="chip ${M.at===t?'on':''}" data-act="mat" data-v="${t}">${t}</button>`).join('')}</div>`}<span class="mu">下次 ${fmtD(nextRuns(M.freq,M.at,1)[0])}</span></div></div>
+ <div class="fr"><label>发给 ${m(4)}</label><div class="col"><div class="row">${['me','sy','yy','sj','hd'].map(k=>`<button class="chip ${M.rcpt.has(k)?'on':''}" data-act="mrc" data-v="${k}">${RC[k]}</button>`).join('')}</div>${nob.map(k=>`<div class="warn">「${RC[k]}」还没拉机器人　<button class="lk" data-act="bot" data-v="${k}">一键拉机器人</button></div>`).join('')}</div></div>
+ <div class="fr"><label>名称</label><div class="row" style="flex-wrap:nowrap"><input id="mName" class="inp" style="flex:1" value="${esc(M.name)}"><span class="mu">按内容自动起名，可改</span></div></div>
+ </div><div class="mpv"><div class="row" style="align-self:stretch"><b>实时预览</b>${m(5)}<span class="mu" style="margin-left:auto">按昨天数据</span></div>${phone(cardOr(mOpts(M)),chatOf([...M.rcpt]),fmtD(nextRuns(M.freq,M.at,1)[0]),560)}</div></div>
+ <div class="mft"><span class="mu">创建后立刻生效，可在列表里停用</span><button class="btn" style="margin-left:auto" data-act="mclose">取消</button><button class="btn" data-act="mtest">测试发送给我</button><button class="btn p ${(M.src==='sql'&&!M.ran)||!M.rcpt.size||nob.length?'dis':''}" data-act="mcreate">${M.edit?'保存':'创建'}</button>${m(6)}</div></div></div>`}
+
+function vCards(){const cv=S.cv;const base=(type,x)=>Object.assign({type,name:'',rc:['me'],thr:10,cmp:'d1',metric:'DAU',dir:'down',miss:'none',sens:'mid',style:'table',concl:true,data:'dau',why:1},x);
+ const seg=(k,opts)=>`<div class="seg">${opts.map(o=>`<button class="${cv[k]===o[0]?'on':''}" data-act="cv" data-k="${k}" data-v="${o[0]}">${o[1]}</button>`).join('')}</div>`;
+ const rule=base('rule',{name:'DAU 跌超 10% 提醒',thr:cv.rule==='hit'?10:15,miss:cv.rule==='brief'?'brief':'none'});
+ return `<div class="cg">
+ <div class="cgc"><div class="cap"><span style="width:10px;height:10px;border-radius:50%;background:#e8740c"></span>智能监控 ${m(1)}</div>${seg('smart',[['alert','异常'],['recover','恢复正常']])}${phone(card(base('smart',{name:'波克棋牌 DAU 监控',variant:cv.smart==='recover'?'recover':''})),'智能问数助手','11-17 周二 10:00',620)}</div>
+ <div class="cgc"><div class="cap"><span style="width:10px;height:10px;border-radius:50%;background:#d83931"></span>常规监控 ${m(2)}</div>${seg('rule',[['hit','命中'],['brief','没命中·发简报'],['none','没命中·不发']])}${phone(cardOr(rule),'智能问数助手','11-17 周二 10:00',620)}</div>
+ <div class="cgc"><div class="cap"><span style="width:10px;height:10px;border-radius:50%;background:#3370ff"></span>定时推送 ${m(3)}</div>${seg('push',[['table','表格'],['bi','轻 BI']])}${phone(card(base('push',{name:'各渠道 DAU 日报',style:cv.push,rc:['me','yy','sj']})),'# 波克运营群','11-17 周二 09:30',620)}</div></div>`}
+
+function vScreen(){let inner;
+ if(S.page==='intro')inner=`<div class="bx">${vIntro()}</div>`;
+ else if(S.page==='home')inner=`<div class="bx">${vSide()}<div class="main">${vHome()}</div></div>`;
+ else if(S.page==='chat')inner=`<div class="bx">${vSide()}<div class="main">${vChat()}</div></div>`;
+ else if(S.page==='tasks')inner=`<div class="bx">${vSide()}<div class="main">${vTasks()}</div></div>${S.drawer?vDrawer():''}${S.modal?vModal():''}`;
+ else inner=`<div class="bx"><div class="main" style="background:#e9ecf3">${vCards()}</div></div>`;
+ return vTop()+inner+(S.toast?`<div class="toast">${esc(S.toast)}</div>`:'')}
+function vAnn(){const key=S.page==='tasks'&&S.modal?'modal':S.page;const a=ANN[key];
+ return `<h2>${a.t}</h2><p class="lead">${a.l}</p>${a.i.map((x,i)=>`<div class="ai">${a.plain?'<span class="mu">·</span>':`<span class="n">${i+1}</span>`}<p><b>${x[0]}</b><small>${x[1]}</small></p></div>`).join('')}${S.ann||a.plain?'':'<p class="off">标注已隐藏，界面里的编号不显示。</p>'}`}
+
+function syncFlow(){const f=S.flow;if(!f||!f.created)return;const t=S.tasks.find(x=>x.flow===f);if(t){t.type=f.type;t.freq=f.freq;t.at=f.at;t.rcpt=[...f.rcpt]}}
+function render(){syncFlow();const ae=document.activeElement,fid=ae&&ae.id;let ss=null,se=null;try{if(fid&&ae.selectionStart!=null){ss=ae.selectionStart;se=ae.selectionEnd}}catch(_){}
+ const ms=document.getElementById('msgs');const keep=ms&&!S.sc?ms.scrollTop:null;
+ document.getElementById('pn').innerHTML=vNav();document.getElementById('screen').innerHTML=vScreen();document.getElementById('ann').innerHTML=vAnn();
+ document.getElementById('annTg').classList.toggle('on',S.ann);
+ const m2=document.getElementById('msgs');if(m2){if(S.sc){m2.scrollTop=m2.scrollHeight;S.sc=0}else if(keep!=null)m2.scrollTop=keep}
+ if(fid&&fid!=='sendBtn'){const n=document.getElementById(fid);if(n){n.focus();try{if(ss!=null)n.setSelectionRange(ss,se)}catch(_){}}}
+ fit()}
+function fit(){const w=document.getElementById('sw').clientWidth;document.getElementById('screen').style.zoom=Math.min(1,w/1180)}
+window.addEventListener('resize',fit);
+
+function classify(t){if(/select\s/i.test(t))return 'push';if(/(跌|涨|降|升)(超|过|破)|%|阈值|低于|高于/.test(t))return 'rule';return 'smart'}
+function send(){const t=S.text.trim();if(!t)return;let k=S.exk&&S.text===PRE[S.exk].text?S.exk:classify(t);
+ if(!S.tag&&!/(每天|每日|每周|每月|每小时|点|定时|提醒|盯|监控|异常|发到)/.test(t)){toast('原型只演示定时任务：试试加上“每天 9 点发给我”');return}
+ startFlow(k,t,!S.tag)}
+function openModal(t){if(!t){S.modal=mDefault();return}const M=mDefault();Object.assign(M,{edit:t.id,src:t.type==='sub'?'q':'sql',ran:true,type:t.type,style:t.style||'table',thr:t.thr||10,sens:t.sens||'mid',freq:t.freq,at:t.at,rcpt:new Set(t.rcpt),name:t.name,q:t.name});S.modal=M}
+function runTask(t){if(!t.on){toast('任务已停用，先打开启用开关');return}
+ t.today=true;const o=tOpts(t);
+ if(t.needFix){t.last={k:'warn',t:'需要处理',s:'SQL 仍报错，本次改为重新分析'};S.drawer={id:t.id,mode:'card'};toast('SQL 仍报错，已按任务名重新分析并发送');return}
+ if(t.type==='rule'&&!ruleHit(o)){t.last={k:'normal',t:'未命中 · 刚刚',s:`${CMPL[o.cmp]} ${ruleV(o)}%，未发送`};toast('已运行：没命中条件，这次不发');return}
+ t.last=t.type==='push'?{k:'ok',t:'已发送 · 刚刚',s:o.style==='bi'?'轻 BI':'表格 6 行 + 合计'}:t.type==='sub'?{k:'ok',t:'已发送 · 刚刚',s:'重新分析 · 轻 BI'}:t.type==='rule'?{k:'hit',t:'命中 · 刚刚',s:`${CMPL[o.cmp]} ${ruleV(o)}%`}:{k:'alert',t:'告警 · 刚刚',s:'DAU 低于正常范围'};
+ S.drawer={id:t.id,mode:'card'};toast('已发到 '+rcLab(t.rcpt))}
+
+document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');
+ if(!el){if(S.menu||S.rcOpen){S.menu=null;S.rcOpen=false;render()}return}
+ if(el.classList.contains('dis')){const a0=el.dataset.act;
+  if(a0==='mcreate'){const M=S.modal;toast(M.src==='sql'&&!M.ran?'先点「试跑」，通过了才能创建':!M.rcpt.size?'至少选一个接收人':'有群还没拉机器人')}
+  else if(a0==='create')toast(S.flow.rcpt.size?'有群还没拉机器人，先点「一键拉机器人」':'至少选一个接收人');
+  else if(a0==='send')toast('先输入内容，或点下面的示例');
+  else if(a0==='dsave')toast('先试跑通过再保存');
+  else if(a0==='mtype')toast('这个类型需要换一种内容来源');
+  render();return}
+ const a=el.dataset.act,v=el.dataset.v,f=S.flow,M=S.modal;
+ if(a!=='menu'&&!(el.closest('.menu')))S.menu=null;
+ if(a!=='rcadd'&&a!=='rcpick')S.rcOpen=false;
+ const tk=()=>S.tasks.find(t=>t.id===+v);
+ switch(a){
+ case 'ann':S.ann=!S.ann;break;
+ case 'reset':init();toast('已重置');break;
+ case 'nav':S.drawer=null;S.modal=null;S.del=null;
+  if(v.startsWith('chat:')){S.tag=true;startFlow(v.slice(5))}else if(v==='modal'){S.page='tasks';openModal()}else{S.page=v;clearTimeout(timer)}break;
+ case 'go':S.page=v;S.drawer=null;S.modal=null;clearTimeout(timer);break;
+ case 'tag':S.tag=!S.tag;break;
+ case 'ex':S.text=PRE[v].text;S.exk=v;S.tag=true;break;
+ case 'send':send();break;
+ case 'next':f.stage++;S.sc=1;break;
+ case 'back':f.stage=+v;S.sc=1;break;
+ case 'freq':f.freq=v;break;
+ case 'at':f.at=v;break;
+ case 'type':f.type=v;break;
+ case 'rc':f.rcpt.has(v)?f.rcpt.delete(v):f.rcpt.add(v);break;
+ case 'rcadd':S.rcOpen=!S.rcOpen;break;
+ case 'rcpick':f.rcpt.add(v);S.rcOpen=false;break;
+ case 'bot':BOT[v]=1;toast('已把「智能问数助手」拉进 '+RC[v]);break;
+ case 'test':toast('测试卡片已发给你（不计入运行记录）');break;
+ case 'create':f.created=true;f.stage=4;S.sc=1;S.tasks.unshift({id:++S.nid,name:f.name,proj:'波克棋牌',src:'问数创建',type:f.type,freq:f.freq,at:f.at,rcpt:[...f.rcpt],on:true,isNew:true,today:false,flow:f,last:{k:'none',t:'还没运行',s:'下次 '+fmtS(nextRuns(f.freq,f.at,1)[0])}});toast('任务已创建，已加到「定时任务」列表');break;
+ case 'chtype':f.type=v;f.tab='set';toast('已改成'+T[v].n+'，右侧可以调设置');break;
+ case 'gotasks':{const t=S.tasks.find(x=>x.flow===f);S.page='tasks';S.hl=t&&t.id;S.f={type:'all',stat:null,proj:'all',q:''};clearTimeout(timer);setTimeout(()=>{S.hl=null},2600);break}
+ case 'tab':f.tab=v;break;
+ case 'sens':f.sens=v;break;
+ case 'smet':{if(f.mets[v]&&Object.values(f.mets).filter(Boolean).length===1){toast('至少盯一个指标');break}f.mets[v]=f.mets[v]?0:1;break}
+ case 'so':f.so[v]=f.so[v]?0:1;break;
+ case 'metric':f.metric=v;break;
+ case 'cmp':f.cmp=v;break;
+ case 'dir':f.dir=v;break;
+ case 'thr':f.thr=Math.max(1,Math.min(99,f.thr+(+v)));break;
+ case 'miss':f.miss=v;break;
+ case 'style':f.style=v;break;
+ case 'concl':{const c=f.comps.find(c=>c.id==='concl');c.on=!c.on;break}
+ case 'sql':f.sqlOpen=f.sqlOpen===v?null:v;break;
+ case 'sqlrun':toast('试跑通过');break;
+ case 'mv':{const i=+v,j=i+(+el.dataset.d);if(j>=0&&j<f.comps.length){const c=f.comps;[c[i],c[j]]=[c[j],c[i]]}break}
+ case 'addc':f.kc++;f.comps.push({id:'kpi'+f.kc,name:'DAU 指标卡',kind:'指标卡 · 你的 SQL',kpi:true});toast('已加一个指标卡，可以上下移动');break;
+ case 'rmc':f.comps.splice(+v,1);break;
+ case 'cbtn':toast(el.dataset.msg);break;
+ case 'notice':S.notice=false;break;
+ case 'stat':S.f.stat=S.f.stat===v?null:v;break;
+ case 'ftype':S.f.type=v;break;
+ case 'fproj':S.f.proj=v;break;
+ case 'clearf':S.f={type:'all',stat:null,proj:'all',q:''};break;
+ case 'sw':{const t=tk();t.on=!t.on;t.last=t.on?{k:'none',t:'已启用',s:'下次 '+fmtS(nextRuns(t.freq,t.at,1)[0])}:{k:'off',t:'已停用 · 刚刚',s:''};toast(t.on?'已启用':'已停用，不会再发送');break}
+ case 'run':runTask(tk());break;
+ case 'edit':{const t=tk();if(t.flow){S.flow=t.flow;S.page='chat';S.flow.tab='set';S.sc=1}else openModal(t);break}
+ case 'fix':S.drawer={id:+v,mode:'sql',fixed:false,ran:false};break;
+ case 'menu':S.menu=S.menu===+v?null:+v;break;
+ case 'mcopy':{const t=tk();const c=Object.assign({},t,{id:++S.nid,name:t.name+' 副本',on:false,isNew:true,flow:null,mo:t.flow?fOpts(t.flow):t.mo,last:{k:'off',t:'已停用',s:'复制出来默认停用'}});S.tasks.splice(S.tasks.indexOf(t)+1,0,c);toast('已复制，默认停用');break}
+ case 'mdel':S.del=+v;break;
+ case 'delno':S.del=null;break;
+ case 'delok':S.tasks=S.tasks.filter(t=>t.id!==+v);S.del=null;toast('已删除');break;
+ case 'dclose':S.drawer=null;break;
+ case 'dfix':S.drawer.fixed=true;break;
+ case 'drun':if(!S.drawer.fixed){toast('试跑失败：Unknown column \'pay_amount\'')}else{S.drawer.ran=true}break;
+ case 'dsave':{const t=S.tasks.find(x=>x.id===S.drawer.id);t.needFix=false;t.last={k:'ok',t:'已修复 · 刚刚',s:'下次按 SQL 正常执行'};S.drawer=null;toast('已保存，下次按 SQL 正常执行');break}
+ case 'newt':openModal();break;
+ case 'mclose':S.modal=null;break;
+ case 'msrc':M.src=v;{const allow=v==='sql'?['push','rule','smart']:['sub','rule','smart'];if(!allow.includes(M.type))M.type=allow[0]}break;
+ case 'mtype':M.type=v;break;
+ case 'mstyle':M.style=v;break;
+ case 'mthr':M.thr=Math.max(1,Math.min(99,M.thr+(+v)));break;
+ case 'msens':M.sens=v;break;
+ case 'mfreq':M.freq=v;break;
+ case 'mat':M.at=v;break;
+ case 'mrc':M.rcpt.has(v)?M.rcpt.delete(v):M.rcpt.add(v);break;
+ case 'mrun':M.ran=true;break;
+ case 'mtest':toast('测试卡片已发给你（不计入运行记录）');break;
+ case 'mcreate':{const o={name:M.name||'未命名任务',type:M.type,freq:M.freq,at:M.at,rcpt:[...M.rcpt],style:M.style,thr:M.thr,sens:M.sens,data:M.src==='sql'?'pay':'dau'};
+  if(M.edit){const t=S.tasks.find(x=>x.id===M.edit);Object.assign(t,o);S.hl=t.id;toast('已保存')}
+  else{const t=Object.assign({id:++S.nid,proj:'波克棋牌',src:'手动创建',on:true,isNew:true,today:false,last:{k:'none',t:'还没运行',s:'下次 '+fmtS(nextRuns(M.freq,M.at,1)[0])}},o);S.tasks.unshift(t);S.hl=t.id;S.f={type:'all',stat:null,proj:'all',q:''};toast('任务已创建')}
+  setTimeout(()=>{S.hl=null},2600);S.modal=null;break}
+ case 'cv':S.cv[el.dataset.k]=v;break;
+ }
+ render()});
+document.addEventListener('input',e=>{const id=e.target.id,v=e.target.value;
+ if(id==='homeText'){S.text=v;const b=document.getElementById('sendBtn');if(b)b.classList.toggle('dis',!v.trim());return}
+ if(id==='q'){S.f.q=v.trim();render();return}
+ if(id==='thr'){const n=parseInt(v,10);if(!isNaN(n)){S.flow.thr=Math.max(1,Math.min(99,n));render()}return}
+ if(id==='mName'){S.modal.name=v;render();return}
+ if(id==='mSql'){S.modal.sql=v;S.modal.ran=false;render();return}
+ if(id==='mQ'){S.modal.q=v;render();return}});
+document.addEventListener('keydown',e=>{if(e.target.id==='homeText'&&e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();send();render()}});
+init();render();
+</script>
+
+</html>
