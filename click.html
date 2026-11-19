@@ -93,7 +93,7 @@ button.chip:hover{border-color:var(--acc2)}
 .ib .ibr{display:flex;gap:8px;align-items:center}
 .send{margin-left:auto;width:32px;height:32px;border-radius:50%;background:var(--acc);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:15px}
 .out{width:720px;margin-top:10px;display:flex;gap:8px;align-items:center;color:var(--mute)}
-.ex{width:720px;margin-top:16px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.ex{width:720px;margin-top:16px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .exc{padding:13px 14px;display:flex;flex-direction:column;gap:5px;position:relative;text-align:left}
 .exc:hover{border-color:var(--acc2);box-shadow:0 4px 14px rgba(59,76,212,.08)}
 .exc span{color:var(--mute);line-height:1.55}
@@ -140,6 +140,21 @@ button.chip:hover{border-color:var(--acc2)}
 .kv{display:grid;grid-template-columns:70px minmax(0,1fr);gap:9px 10px;line-height:1.55}
 .kv>span:nth-child(odd){color:var(--mute)}
 .setb{background:#fff;border:1px solid var(--line);border-radius:12px;padding:6px 16px}
+.mon{display:flex;flex-direction:column;gap:12px}
+.msec{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.msec>b,.mhd b{font-size:14px;font-weight:600}
+.msec .mu{font-size:12px;line-height:1.5}
+.mhd{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.mhd>div:first-child{flex:1;min-width:0}
+.mhd>.row{flex:none;flex-wrap:nowrap}
+.replay{background:#fdf1e3;color:var(--org);border-radius:8px;padding:8px 12px}
+.replay.none{background:#e8f5ee;color:var(--ok)}
+.replay b{font-size:15px;margin:0 3px}
+.hits{display:flex;flex-direction:column;gap:6px}
+.hits>div{display:grid;grid-template-columns:44px 78px minmax(0,1fr) auto;gap:10px;align-items:center;padding:7px 12px;border-radius:8px;background:var(--soft)}
+.hits .lo{color:var(--red);font-weight:600}.hits .hi{color:var(--org);font-weight:600}
+.mgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.mgrid .swr{text-align:left;align-items:flex-start;line-height:1.35}
 .fr{display:grid;grid-template-columns:110px minmax(0,1fr);gap:12px;padding:12px 0;border-bottom:1px solid var(--line2);align-items:start}
 .fr:last-child{border-bottom:0}
 .fr>label{color:#454c66;font-weight:500;display:flex;gap:6px;align-items:center;padding-top:4px}
@@ -285,7 +300,13 @@ const FQ={day:'每天',workday:'工作日',mon:'每周一',fri:'每周五',month
 const RC={me:'我',yy:'# 波克运营群',sj:'# 数据组群',sy:'# 商业化群',hd:'# 活动群',by:'# 捕鱼运营群'};
 let BOT;
 const T={push:{n:'定时推送',d:'到点发数据',c:'#3370ff',k:'t-push'},sub:{n:'问题订阅',d:'到点重新分析',c:'#7c4dd6',k:'t-sub'},rule:{n:'常规监控',d:'超过阈值才发',c:'#d83931',k:'t-rule'},smart:{n:'智能监控',d:'自动学正常范围',c:'#e8740c',k:'t-smart'}};
-const SENS={low:{l:'低',sig:'3σ',dates:['11-16'],range:'54,900 – 63,100',b:[24,68]},mid:{l:'中',sig:'2.5σ',dates:['11-02','11-09','11-16'],range:'56,800 – 61,200',b:[32,58]},high:{l:'高',sig:'2σ',dates:['10-24','10-27','11-02','11-05','11-09','11-12','11-16'],range:'57,600 – 60,400',b:[37,53]}};
+const SENS={low:{l:'低',sig:'3σ',k:3,range:'51,800 – 67,400',b:[20,84]},mid:{l:'中',sig:'2.5σ',k:2.5,range:'53,100 – 66,100',b:[26,72]},high:{l:'高',sig:'2σ',k:2,range:'54,400 – 64,800',b:[32,62]}};
+const SIG=2600,BL={w4:'近 4 周同一星期几',d7:'近 7 天',d28:'近 28 天滚动'},DIMK={ch:'渠道',nu:'新老用户',dev:'机型',geo:'地区'};
+const D30=(()=>{const a=[];for(let i=0;i<30;i++){const d=new Date(2026,9,18+i);a.push(String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'))}return a})();
+const ANOM=[{i:4,z:-2.3,why:'活动结束后回落',dim:'老用户降得多'},{i:11,z:2.1,why:'版本更新带来回流',dim:'iOS 回流占六成'},{i:29,z:-2.8,why:'华为渠道掉量',dim:'华为占降幅 78.5%'}];
+const B30=(()=>{const base=[58000,58600,59300,61500,63600,64000,59200,58300,58200,58900,60300,62200,60000,59600];return D30.map((_,i)=>i>=16?base[i-16]:base[((i-16)%7+7)%7]-300)})();
+const A30=(()=>{const day=[57820,58410,59130,61240,63880,64210,58960,58120,57940,58730,60110,62450,59720,52310],nz=[.4,-.6,.9,-.3,0,.5,-.8,.2,.7,-.4,.1,0,-.5,.6,.3,-.2];return D30.map((_,i)=>{if(i>=16)return day[i-16];const a=ANOM.find(x=>x.i===i);return Math.round(B30[i]+(a?a.z:nz[i])*SIG)})})();
+const hitsOf=k=>ANOM.filter(x=>Math.abs(x.z)>=SENS[k].k);
 const CMPL={d1:'比前天',w1:'比上周同日',a7:'比近 7 天日均'};
 const CMPV={DAU:{d1:-12.4,w1:-9.8,a7:-11.1},'付费率':{d1:-3.1,w1:-1.2,a7:-2.0}};
 const DAU=[['小米',10240,10480],['华为',9820,15640],['OPPO',9110,9330],['vivo',8760,8920],['iOS',7490,8340],['官网',6890,7010]];
@@ -296,20 +317,21 @@ const SQL_BAD="SELECT channel, SUM(pay_amount) AS pay\nFROM dws_pay_d\nWHERE dt 
 const PRE={
  smart:{text:'盯住 DAU 和付费率，异常了告诉我原因',name:'波克棋牌 DAU 监控',steps:['识别到要建定时任务','生成取数 SQL（DAU、付费率 2 条），试跑通过','识别到频率「每小时」','没给阈值 → 推荐智能监控，按近 4 周自动学正常范围'],freq:'hour',at:'09:00',type:'smart',rcpt:['me']},
  rule:{text:'每小时看一下 DAU，比前天跌超 10% 就提醒我',name:'DAU 跌超 10% 提醒',steps:['识别到要建定时任务','生成取数 SQL（2 条），试跑通过','识别到频率「每小时整点」','识别到条件「DAU 比前天跌超 10%」'],freq:'hour',at:'09:00',type:'rule',rcpt:['me']},
- push:{text:SQL_DAU+'\n每天 9 点发到运营群',name:'各渠道 DAU 日报',steps:['识别到 SQL + 定时发送','解析出 3 列：日期 / 渠道 / DAU','试跑通过，返回 84 行，用时 1.2 秒',"写死的日期 '2026-11-16' 换成 "+BIZ+"（每天取昨天）"],freq:'day',at:'09:30',type:'push',rcpt:['me','yy']}
+ push:{text:SQL_DAU+'\n每天 9 点发到运营群',name:'各渠道 DAU 日报',steps:['识别到 SQL + 定时发送','解析出 3 列：日期 / 渠道 / DAU','试跑通过，返回 84 行，用时 1.2 秒',"写死的日期 '2026-11-16' 换成 "+BIZ+"（每天取昨天）"],freq:'day',at:'09:30',type:'push',rcpt:['me','yy']},
+ sub:{text:'每个工作日早上 9 点，分析一下昨天大盘怎么样、哪里变化最大，发给我',name:'昨日大盘简报',steps:['识别到要建定时任务','这是一个问题，没有 SQL → 按问题订阅，到点重新分析','先分析了一次：取数 3 条，用时 18 秒','识别到频率「工作日 09:00」'],freq:'workday',at:'09:00',type:'sub',rcpt:['me']}
 };
 const REC={push:'你贴了 SQL',rule:'你给了阈值',smart:'你没给阈值，我来学正常范围',sub:'你给的是一个问题'};
 const SETL={push:'组件与 SQL',sub:'问题',rule:'规则',smart:'智能监控设置'};
-const EX=[['smart','✧ 盯住指标，异常提醒','不设阈值，DAU、付费率异常了告诉我原因'],['rule','♢ 跌破阈值提醒','DAU 比前天跌超 10% 才提醒我'],['push','➤ 贴 SQL，定时发','贴一段 SQL，再选 3 项就建好']];
-const PAGES=[['intro','00 说明 · 开发顺序'],['home','01 问数首页'],['chat:smart','02 对话建 · 智能监控'],['chat:rule','03 对话建 · 常规监控'],['chat:push','04 对话建 · 定时推送'],['tasks','05 定时任务列表'],['modal','06 手动新建任务'],['cards','07 飞书卡片']];
+const EX=[['smart','✧ 盯住指标，异常提醒','不设阈值，DAU、付费率异常了告诉我原因'],['rule','♢ 跌破阈值提醒','DAU 比前天跌超 10% 才提醒我'],['push','➤ 贴 SQL，定时发','贴一段 SQL，再选 3 项就建好'],['sub','◷ 定时问一个问题','每个工作日 9 点重新分析昨天大盘，把结论发我']];
+const PAGES=[['intro','00 说明 · 开发顺序'],['home','01 问数首页'],['chat:smart','02 对话建 · 智能监控'],['chat:rule','03 对话建 · 常规监控'],['chat:push','04 对话建 · 定时推送'],['chat:sub','05 对话建 · 问题订阅'],['tasks','06 定时任务列表'],['modal','07 手动新建任务'],['cards','08 飞书卡片']];
 
 const ANN={
- intro:{t:'00 说明 · 开发顺序',l:'这是可点击的原型，数据都是演示用的。下次运行时间按 11-17 周二 10:20 计算。',i:[['推荐走法','01 首页点一个示例 → 发送 → 确认三张卡 → 创建 → 去 05 列表看状态 → 点「立即运行」看卡片。'],['粉色编号','对应这一栏的说明，右上角可关。'],['重置数据','回到初始状态，列表里新建的任务会清掉。']],plain:1},
- home:{t:'01 问数首页 · 定时任务入口',l:'定时任务是一种「产出」，和飞书文档并列；不放进「选择技能」。',i:[['产出栏新增「定时任务」','带「新」。点一下选中，再点取消。'],['选中后输入框带标签','占位提示换成“贴 SQL 或说要看什么，再说什么时候发”。'],['不点也能识别','话里有频率（每天 9 点、每小时）或要盯着/提醒，自动按定时任务处理，并提示已自动打开。'],['三个示例，按推荐顺序','智能监控、常规监控、定时推送。点击只填入输入框，不直接发送。'],['工作台新增「定时任务」菜单','原「订阅任务」入口下线，旧链接跳到这里。'],['项目跟着对话','任务绑定当前对话的项目，任务里不能改项目。']]},
- chat:{t:'02–04 对话建任务',l:'左边对话一步步确认，右边实时看会收到什么。三类任务共用这一页，差别在类型推荐和「设置」标签。',i:[['步骤条','识别意图、生成/解析 SQL、试跑、识别频率和条件，逐条出现。'],['只问三件事','什么时候 → 这类任务最关键的一项 → 发给谁。其余都按默认，确认后可点「修改」回去。'],['类型自动识别','贴 SQL → 定时推送；给了阈值 → 常规监控；没阈值但要盯着 → 智能监控。第 2 张卡里可以「换一种」。'],['右侧三个标签','预览 / 设置 / 运行计划。定时推送的预览可以切「飞书里收到」和「点开后 · 移动端」。'],['智能监控设置','灵敏度 低/中/高 = 3σ/2.5σ/2σ；用近 30 天回放告诉用户每档会提醒几次。'],['常规监控规则','改指标、比较方式、阈值，当场试算；试试把阈值改成 15，预览会变成“这次不会发”。'],['定时推送组件','卡片由组件组成，可排序、增删；每个组件有自己的 SQL，只对创建人开放。'],['创建后动作','去列表看、发测试、加告警条件、改成智能监控。改动直接同步到任务。'],['项目锁定','随对话带入，按创建人的数据权限执行。']]},
- tasks:{t:'05 定时任务列表',l:'四类任务一个列表。原 SQL 定时任务（约一万个）和订阅任务原样迁入，照旧执行，用户不需要重新设置。',i:[['迁移提示与范围','提示只显示一次。标题旁切「我创建的 / 发给我的」；发给我的只能查看和不再接收。'],['四个统计','点数字筛选列表，再点取消；“需要处理”大于 0 时橙色。'],['类型 / 项目 / 搜索','类型颜色和飞书卡片头一致：推送蓝、订阅紫、常规红、智能橙。'],['来源','问数创建 / 手动创建 / 原定时任务 / 原订阅任务。迁移来的标「原样发送」，⋯ 里可以换成新版呈现，也能换回。今天新建的带「新」，问数创建的点「编辑」回到原对话。'],['最近一次状态','已发送 / 命中 / 告警 / 未命中不发 / 需要处理 / 已停用。'],['行操作','编辑、立即运行（马上发一次，不影响计划）；⋯ 里有复制、停用、删除。SQL 报错的行把「修 SQL」放第一个。'],['新建任务','不经过对话直接建，见 06。'],['运行结果抽屉','立即运行后从右侧滑出这次发出的卡片；修 SQL 也在这里。']]},
- modal:{t:'06 手动新建任务',l:'从列表页「+ 新建任务」打开，表单一次填完，结果和对话建的一样。',i:[['内容来源二选一','写 SQL：到点直接跑，必须先试跑通过才能创建。写一个问题：到点重新分析（原订阅任务）。'],['类型跟着来源','SQL → 推送/常规/智能；问题 → 订阅/常规/智能。选常规多一行规则，选智能多一行灵敏度。'],['时间','五种频率 + 具体时间，当场算出下次执行时间。'],['接收人','人和群混选；群里没拉机器人时提示并给“一键拉机器人”。'],['实时预览','每改一项，右侧用昨天数据重画卡片，卡片头颜色随类型变。'],['测试发送 / 创建','测试只发给自己，不计入运行记录；创建后回到列表，新任务置顶带「新」。']]},
- cards:{t:'07 飞书卡片',l:'同一骨架：头 → 正文 → 按钮 → 底注。不同类型只换头色、正文和按钮。卡片上的按钮也能点。',i:[['卡片头','颜色按类型；第二行写类型、结果和业务日期。'],['正文按类型','智能：当前值 + 正常范围 + 原因。常规：条件与实际值 + 降幅前 3 渠道 + 趋势。推送：摘要卡或表格卡，点「看完整数据」打开移动端页面。'],['按钮按类型','智能：展开分析 / 正常波动 / 调灵敏度。常规：追问原因 / 今天别再提醒 / 改阈值。推送：看完整数据（打开移动端页面）/ 追问 / 下载 Excel。'],['底注','发给谁、按谁的数据权限执行。群里所有人看到同一张卡。'],['没命中 / 恢复正常','常规监控没命中默认不发，可选发简报；智能监控恢复正常时发一条灰卡，之后不再提醒。']]}
+ intro:{t:'00 说明 · 开发顺序',l:'这是可点击的原型，数据都是演示用的。下次运行时间按 11-17 周二 10:20 计算。',i:[['推荐走法','01 首页点一个示例 → 发送 → 确认三张卡 → 创建 → 去 06 列表看状态 → 点「立即运行」看卡片。'],['粉色编号','对应这一栏的说明，右上角可关。'],['重置数据','回到初始状态，列表里新建的任务会清掉。']],plain:1},
+ home:{t:'01 问数首页 · 定时任务入口',l:'定时任务是一种「产出」，和飞书文档并列；不放进「选择技能」。',i:[['产出栏新增「定时任务」','带「新」。点一下选中，再点取消。'],['选中后输入框带标签','占位提示换成“贴 SQL 或说要看什么，再说什么时候发”。'],['不点也能识别','话里有频率（每天 9 点、每小时）或要盯着/提醒，自动按定时任务处理，并提示已自动打开。'],['四个示例，按开发顺序','智能监控、常规监控、定时推送、问题订阅。点击只填入输入框，不直接发送。'],['工作台新增「定时任务」菜单','原「订阅任务」入口下线，旧链接跳到这里。'],['项目跟着对话','任务绑定当前对话的项目，任务里不能改项目。']]},
+ chat:{t:'02–05 对话建任务',l:'左边对话一步步确认，右边实时看会收到什么。四类任务共用这一页，差别在类型推荐和「设置」标签。',i:[['步骤条','识别意图、生成/解析 SQL、试跑、识别频率和条件，逐条出现。'],['只问三件事','什么时候 → 这类任务最关键的一项 → 发给谁。其余都按默认，确认后可点「修改」回去。'],['类型自动识别','贴 SQL → 定时推送；给了阈值 → 常规监控；没阈值但要盯着 → 智能监控；只是一个问题 → 问题订阅。第 2 张卡里可以「换一种」。'],['右侧三个标签','预览 / 设置 / 运行计划。定时推送的预览可以切「飞书里收到」和「点开后 · 移动端」。'],['智能监控设置','智能监控默认先打开这一页。近 30 天实际值和正常范围画在一张图上；灵敏度 低/中/高 = 3σ/2.5σ/2σ，切换后当场回放会提醒几次、哪几天、什么原因。下面调正常范围的算法、拆原因的维度和防打扰。'],['常规监控规则','改指标、比较方式、阈值，当场试算；试试把阈值改成 15，预览会变成“这次不会发”。'],['定时推送组件','卡片由组件组成，可排序、增删；每个组件有自己的 SQL，只对创建人开放。'],['创建后动作','去列表看、发测试、加告警条件、改成智能监控。改动直接同步到任务。'],['项目锁定','随对话带入，按创建人的数据权限执行。']]},
+ tasks:{t:'06 定时任务列表',l:'四类任务一个列表。原 SQL 定时任务（约一万个）和订阅任务原样迁入，照旧执行，用户不需要重新设置。',i:[['迁移提示与范围','提示只显示一次。标题旁切「我创建的 / 发给我的」；发给我的只能查看和不再接收。'],['四个统计','点数字筛选列表，再点取消；“需要处理”大于 0 时橙色。'],['类型 / 项目 / 搜索','类型颜色和飞书卡片头一致：推送蓝、订阅紫、常规红、智能橙。'],['来源','问数创建 / 手动创建 / 原定时任务 / 原订阅任务。迁移来的标「原样发送」，⋯ 里可以换成新版呈现，也能换回。今天新建的带「新」，问数创建的点「编辑」回到原对话。'],['最近一次状态','已发送 / 命中 / 告警 / 未命中不发 / 需要处理 / 已停用。'],['行操作','编辑、立即运行（马上发一次，不影响计划）；⋯ 里有复制、停用、删除。SQL 报错的行把「修 SQL」放第一个。'],['新建任务','不经过对话直接建，见 07。'],['运行结果抽屉','立即运行后从右侧滑出这次发出的卡片；修 SQL 也在这里。']]},
+ modal:{t:'07 手动新建任务',l:'从列表页「+ 新建任务」打开，表单一次填完，结果和对话建的一样。',i:[['内容来源二选一','写 SQL：到点直接跑，必须先试跑通过才能创建。写一个问题：到点重新分析（原订阅任务）。'],['类型跟着来源','SQL → 推送/常规/智能；问题 → 订阅/常规/智能。选常规多一行规则，选智能多一行灵敏度。'],['时间','五种频率 + 具体时间，当场算出下次执行时间。'],['接收人','人和群混选；群里没拉机器人时提示并给“一键拉机器人”。'],['实时预览','每改一项，右侧用昨天数据重画卡片，卡片头颜色随类型变。'],['测试发送 / 创建','测试只发给自己，不计入运行记录；创建后回到列表，新任务置顶带「新」。']]},
+ cards:{t:'08 飞书卡片',l:'同一骨架：头 → 正文 → 按钮 → 底注。不同类型只换头色、正文和按钮。卡片上的按钮也能点。',i:[['卡片头','颜色按类型；第二行写类型、结果和业务日期。'],['正文按类型','智能：当前值 + 正常范围 + 原因。常规：条件与实际值 + 降幅前 3 渠道 + 趋势。推送：摘要卡或表格卡，点「看完整数据」打开移动端页面。'],['按钮按类型','智能：展开分析 / 正常波动 / 调灵敏度。常规：追问原因 / 今天别再提醒 / 改阈值。推送：看完整数据（打开移动端页面）/ 追问 / 下载 Excel。'],['底注','发给谁、按谁的数据权限执行。群里所有人看到同一张卡。'],['没命中 / 恢复正常','常规监控没命中默认不发，可选发简报；智能监控恢复正常时发一条灰卡，之后不再提醒。']]}
 };
 
 let S,timer=null,toastT=null;
@@ -355,7 +377,7 @@ const trend=`<svg viewBox="0 0 280 60" class="spark" style="height:56px" aria-hi
 function card(o){
  const h=(bg,title,sub)=>`<div class="fh" style="background:${bg}"><b>${title}</b><small>${sub}</small></div>`;
  if(o.legacy){const doc=o.legacy==='飞书文档',pay=o.data==='pay';return `<div class="fc">${h('#3370ff',esc(o.name),'数据推送 · 11-17 10:00')}<div class="fb">${doc?`<div>查询结果已写入飞书文档，共 ${pay?6:84} 行。</div><div style="background:var(--soft);border-radius:8px;padding:8px 10px"><b>📄 ${esc(o.name)}_20261117</b><div class="mu">飞书文档 · 点击打开</div></div>`:`${barsSvg(pay)}<div class="mu">共 ${pay?6:84} 行，图后附表格图</div>`}<div class="ft">发给 ${esc(rcLab(o.rc))} · 原定时任务，按原来的方式发送</div></div></div>`}
- if(o.type==='smart'){const s=SENS[o.sens||'mid'];
+ if(o.type==='smart'){const s=SENS[o.sens||'mid'];if(o.sens==='low'&&!o.variant)return null;
   if(o.variant==='recover')return `<div class="fc">${h('#8b91a7','✓ '+esc(o.name)+' · 已恢复','智能监控 · 回到正常范围 · 11-17 14:00')}<div class="fb"><div>DAU 已回到正常范围（${s.range}），这次异常结束，之后不再提醒。</div>${btns([['看这次异常回顾','已打开这次异常从开始到恢复的回顾']])}${ft(o)}</div></div>`;
   return `<div class="fc">${h('#e8740c','✧ '+esc(o.name),'智能监控 · 低于正常范围 · 业务日期 11-16')}<div class="fb"><div class="kpis"><div class="kpi"><span>DAU</span><b class="dn">52,310</b></div><div class="kpi"><span>正常范围</span><b class="sm">${s.range}</b></div></div>${band(s.b)}${o.why!==0?'<div><b>原因</b>　华为渠道少了 5,820 人（-37.2%），占降幅 78.5%；iOS 少 850 人（-10.2%）。其他渠道正常。</div>':''}<div class="mu">近 4 周同为周一的基线 · 灵敏度 ${s.l}</div>${btns([['展开分析','已在问数里打开这次异常的完整分析'],['正常波动','已记下：这次算正常波动，会计入基线'],['调灵敏度','已打开任务设置 · 灵敏度']])}${ft(o)}</div></div>`}
  if(o.type==='rule'){const v=ruleV(o),hit=ruleHit(o),val=o.metric==='DAU'?'52,310':'4.6%';
@@ -374,9 +396,19 @@ function card(o){
  const tbl=o.style==='bi'?'':`<table><thead>${thead}</thead><tbody>${rows}</tbody></table><div class="mu">${pay?'共 6 行':'共 84 行，卡片显示前 6 行 + 合计'}</div>`;
  return `<div class="fc">${h('#3370ff',esc(o.name),'定时推送 · 业务日期 11-16')}<div class="fb">${concl}${kpi}${bars}${tbl}${btns([['看完整数据','','mp'],['追问','已在问数里基于这份数据追问'],['下载 Excel','已生成 Excel，飞书里点开即可下载']])}${ft(o)}</div></div>`;
 }
-function cardOr(o){const c=card(o);return c||`<div class="empty"><b>按昨天的数据，这次不会发</b><span class="mu">「${condT(o)}」没命中，选了「不发」</span></div>`}
+function cardOr(o){const c=card(o);return c||`<div class="empty"><b>按昨天的数据，这次不会发</b><span class="mu">${o.type==='smart'?'灵敏度「低」：昨天偏离 2.8σ，没超过 3σ，不算异常':`「${condT(o)}」没命中，选了「不发」`}</span></div>`}
 function phone(inner,chat,time,hgt){chat=chat||'智能问数助手';return `<div class="phone" style="height:${hgt||580}px"><div class="fsb">‹ ${esc(chat)} <span class="ptag">${chat.startsWith('#')?'群':'机器人'}</span></div><div class="pscr"><div class="pt0">${time||'11-17 周二 10:00'}</div>${inner}</div></div>`}
 const barsSvg=pay=>`<svg viewBox="0 0 280 80" class="spark" style="height:76px" aria-hidden="true">${(pay?PAY:DAU).map((r,i)=>{const v=r[1]/(pay?186400:10240);return `<rect x="${i*46+6}" y="${66-v*58}" width="30" height="${v*58}" rx="3" fill="${i===1&&!pay?'#cf342c':'#3b5bd9'}"/><text x="${i*46+21}" y="78" font-size="9" text-anchor="middle" fill="#8b91a7">${r[0]}</text>`}).join('')}</svg>`;
+function base30(k){const W=640,H=228,L=38,R=632,Tp=24,Bt=200,n=D30.length;
+ const lo=B30.map(v=>v-k*SIG),hi=B30.map(v=>v+k*SIG);
+ const mn=Math.floor(Math.min(...lo,...A30)/5000)*5000,mx=Math.ceil(Math.max(...hi,...A30)/5000)*5000;
+ const X=i=>L+(R-L)*i/(n-1),Y=v=>Bt-(Bt-Tp)*(v-mn)/(mx-mn),P=a=>a.map((v,i)=>[X(i),Y(v)]),pt=p=>p[0].toFixed(1)+','+p[1].toFixed(1);
+ const sm=p=>{let d='';for(let i=0;i<p.length-1;i++){const a=p[Math.max(0,i-1)],b=p[i],c=p[i+1],e=p[Math.min(p.length-1,i+2)];d+=`C${pt([b[0]+(c[0]-a[0])/6,b[1]+(c[1]-a[1])/6])} ${pt([c[0]-(e[0]-b[0])/6,c[1]-(e[1]-b[1])/6])} ${pt(c)}`}return d};
+ const up=P(hi),dn=P(lo).reverse(),ac=P(A30);
+ let g='';for(let v=mn;v<=mx;v+=5000){const y=Y(v);g+=`<line x1="${L}" x2="${R}" y1="${y.toFixed(1)}" y2="${y.toFixed(1)}" stroke="#edeff5"/><text x="${L-6}" y="${(y+3.5).toFixed(1)}" text-anchor="end">${v/1000}k</text>`}
+ let xl='';for(let i=0;i<n;i+=5)xl+=`<text x="${X(i).toFixed(1)}" y="${Bt+17}" text-anchor="middle">${D30[i]}</text>`;
+ const dots=ANOM.filter(x=>Math.abs(x.z)>=k).map(x=>`<circle cx="${ac[x.i][0].toFixed(1)}" cy="${ac[x.i][1].toFixed(1)}" r="4.5" fill="#cf342c" stroke="#fff" stroke-width="2"/>`).join('');
+ return `<svg viewBox="0 0 ${W} ${H}" class="spark" role="img" aria-label="DAU 近 30 天实际值和正常范围" font-size="11.5" fill="#8b91a7"><line x1="${R-150}" x2="${R-134}" y1="9" y2="9" stroke="#3b4cd4" stroke-width="2"/><text x="${R-129}" y="12.5">实际 DAU</text><rect x="${R-66}" y="4" width="12" height="10" rx="2" fill="#2a9d8f" fill-opacity=".3"/><text x="${R-50}" y="12.5">正常范围</text>${g}<path d="M${pt(up[0])}${sm(up)}L${pt(dn[0])}${sm(dn)}Z" fill="#2a9d8f" fill-opacity=".15"/><path d="M${pt(ac[0])}${sm(ac)}" fill="none" stroke="#3b4cd4" stroke-width="2" stroke-linejoin="round"/>${dots}${xl}</svg>`}
 function mpage(o){const pay=o.data==='pay',D=pay?PAY:DAU;
  if(o.type==='sub')return `<div class="mph"><b>${esc(o.name)}</b><span class="mu">重新分析 · 业务日期 11-16</span></div><div>昨天 DAU 52,310，比前天少 12.4%；付费 49.7 万，少 3.1%。降幅主要来自华为渠道，少了 5,820 人。</div><div class="kpis k3"><div class="kpi"><span>DAU</span><b>52,310</b></div><div class="kpi"><span>付费</span><b>49.7万</b></div><div class="kpi"><span>付费率</span><b>4.6%</b></div></div><div class="mpc"><div class="mu">近 14 天 DAU</div>${trend.replace('stroke="#cf342c" stroke-dasharray','stroke="transparent" stroke-dasharray')}</div><div class="mpc"><div class="mu">各渠道 DAU</div><table><thead><tr><th>渠道</th><th>昨天</th><th>变化</th></tr></thead><tbody>${DAU.map(r=>`<tr><td>${r[0]}</td><td>${fN(r[1])}</td><td class="${(r[1]-r[2])/r[2]<-.1?'dn':''}">${pc(r[1],r[2])}</td></tr>`).join('')}</tbody></table></div><div class="mpa">追问这次分析…<b>↑</b></div>`;
  return `<div class="mph"><b>${esc(o.name)}</b><span class="mu">业务日期 11-16 · ‹ 上一期</span></div><div class="kpis"><div class="kpi"><span>${pay?'付费':'DAU'}</span><b>${pay?'49.7万':'52,310'}</b></div><div class="kpi"><span>${pay?'比上周':'比前天'}</span><b class="dn">${pay?'-3.1%':'-12.4%'}</b></div></div>
@@ -386,7 +418,7 @@ function pv(o,chat,time,hgt){const can=!o.legacy&&(o.type==='push'||o.type==='su
  const tg=can?`<div class="seg"><button class="${mp?'':'on'}" data-act="mp" data-v="0">飞书里收到</button><button class="${mp?'on':''}" data-act="mp" data-v="1">点开后 · 移动端</button></div>`:'';
  return `<div class="pvw">${tg}${mp?`<div class="phone" style="height:${hgt||580}px"><div class="fsb">‹ 智能问数 <span class="ptag">移动端</span></div><div class="pscr mp">${mpage(o)}</div></div>`:phone(cardOr(o),chat,time,hgt)}</div>`}
 const chatOf=rc=>{const g=rc.find(k=>k!=='me');return g?RC[g]:'智能问数助手'};
-function fOpts(f){return{type:f.type,name:f.name,rc:[...f.rcpt],thr:f.thr,cmp:f.cmp,metric:f.metric,dir:f.dir,miss:f.miss,sens:f.sens,style:f.style,concl:f.comps.find(c=>c.id==='concl').on,kpi:f.comps.some(c=>c.kpi),data:'dau',why:f.so.why}}
+function fOpts(f){return{type:f.type,name:f.name,rc:[...f.rcpt],thr:f.thr,cmp:f.cmp,metric:f.metric,dir:f.dir,miss:f.miss,sens:f.sens,style:f.style,concl:f.comps.find(c=>c.id==='concl').on,kpi:f.comps.some(c=>c.kpi),data:'dau',why:Object.values(f.dims).some(Boolean)?1:0}}
 function tOpts(t){if(t.flow)return fOpts(t.flow);return Object.assign({type:t.type,name:t.name,legacy:t.legacy,rc:t.rcpt,thr:t.thr||10,cmp:'d1',metric:t.metric||'DAU',dir:'down',miss:'none',sens:t.sens||'mid',style:t.style||'table',concl:true,data:t.data||'dau',why:1},t.mo||{})}
 
 /* ---------- views ---------- */
@@ -395,11 +427,11 @@ function vTop(){return `<div class="top"><b>DATA</b><span>系统管理</span><sp
 function vSide(){const a=S.page==='tasks'?'t':'h';return `<div class="side"><div class="it" style="font-weight:600;color:#151a2d">问数工作台</div><button class="it sb ${a==='h'?'on':''}" data-act="go" data-v="home">智能问数</button><button class="it sb ${a==='t'?'on':''}" data-act="go" data-v="tasks">定时任务 <span class="new">新</span>${S.page==='home'?m(5):''}</button><div class="it">分析与知识</div><div class="it">数据治理</div><div class="it">MCP 管理</div><div class="it">权限管理</div></div>`}
 
 function vIntro(){const dev=[
- ['1','chat2轻BI','把结论拆成组件输出：指标卡、图、表、解读各是一块。给前端卡片和画板的数据格式。','带可选项的卡片：对话里点选，不用打字。画板：组件增删、排序、换样式。移动端适配。','02–04 确认卡<br>07 移动端页'],
- ['2','智能监控','自己学正常范围、到点判断、异常时拆原因、防打扰、出告警卡。到点执行和任务状态在这一步搭好，后三步都用它。','提供发送接口：发到人或群。任务列表：看任务、启停、看最近一次结果。','02、05、07'],
- ['3','常规监控','自定义阈值：指标、比较方式、阈值，命中才发；改完当场试算这次发不发。','设置里加阈值这几项。执行、发送、列表沿用第 2 步。','03、07'],
- ['4','定时推送<br>含迁移','丢一段 SQL，AI 只问三件事：什么时候发、怎么呈现、发给谁。新任务发摘要卡，点开是移动端页面。','贴 SQL 入口和手动新建弹窗；建任务、改任务的接口。<br><b>迁移：</b>约一万个旧定时任务原样迁入，照旧执行和发送；任务主人可以一键换成新版呈现，也能换回。','01、04、05、06'],
- ['5','订阅中心','旧订阅任务并进同一个列表，显示为「问题订阅」；到点还是重问一遍，用户无感。','原订阅中心入口指到新列表，旧链接保持能打开。','05']];
+ ['1','chat2轻BI','把结论拆成组件输出：指标卡、图、表、解读各是一块。给前端卡片和画板的数据格式。','带可选项的卡片：对话里点选，不用打字。画板：组件增删、排序、换样式。移动端适配。','02–05 确认卡<br>08 移动端页'],
+ ['2','智能监控','自己学正常范围、到点判断、异常时拆原因、防打扰、出告警卡。到点执行和任务状态在这一步搭好，后三步都用它。','提供发送接口：发到人或群。任务列表：看任务、启停、看最近一次结果。','02、06、08'],
+ ['3','常规监控','自定义阈值：指标、比较方式、阈值，命中才发；改完当场试算这次发不发。','设置里加阈值这几项。执行、发送、列表沿用第 2 步。','03、08'],
+ ['4','定时推送<br>含迁移','丢一段 SQL，AI 只问三件事：什么时候发、怎么呈现、发给谁。新任务发摘要卡，点开是移动端页面。','贴 SQL 入口和手动新建弹窗；建任务、改任务的接口。<br><b>迁移：</b>约一万个旧定时任务原样迁入，照旧执行和发送；任务主人可以一键换成新版呈现，也能换回。','01、04、06、07'],
+ ['5','订阅中心','旧订阅任务并进同一个列表，显示为「问题订阅」；到点还是重问一遍，用户无感。','原订阅中心入口指到新列表，旧链接保持能打开。','05、06']];
  return `<div class="intro"><div class="col" style="gap:18px"><div><div class="mu" style="font-size:12px;letter-spacing:.08em;color:var(--acc);font-weight:600">智能问数 · 产品原型</div><h2>定时任务</h2><p>到点自动取数、检查或分析，把结果发到飞书。四类：定时推送、问题订阅、常规监控、智能监控。可以在问数里一句话创建，也可以在「定时任务」页手动建。原「SQL 定时任务」和「订阅任务」都迁到同一个列表，照常执行。</p></div>
  <div class="pl">${PAGES.slice(1).map((p,i)=>`<button data-act="nav" data-v="${p[0]}"><b>0${i+1}</b><span>${p[1].slice(3)}</span><span class="mu" style="margin-left:auto">去看 ›</span></button>`).join('')}</div>
  <button class="btn p" data-act="nav" data-v="home" style="align-self:flex-start">从首页开始走一遍 ›</button></div>
@@ -411,19 +443,19 @@ function vHome(){return `<div class="hm card"><div class="hmt">当前项目 <spa
  <div class="ib ${S.tag?'on':''}"><textarea id="homeText" rows="3" placeholder="${S.tag?'贴 SQL 或说要看什么，再说什么时候发。例如：每天 9 点发到运营群':'问点什么，例如：昨天 DAU 为什么跌了'}">${esc(S.text)}</textarea>
  <div class="ibr"><span class="chip">Auto ▾</span><span class="chip">▤ 波克棋牌</span><span class="chip">✦ 选择技能</span>${S.tag?`<button class="chip on" data-act="tag">◷ 定时任务 ×</button>${m(2)}`:''}<button id="sendBtn" class="send ${S.text.trim()?'':'dis'}" data-act="send" aria-label="发送">↑</button></div></div>
  <div class="out">产出：<span class="chip">飞书文档</span><button class="chip ${S.tag?'on':''}" data-act="tag">◷ 定时任务 <span class="new">新</span></button>${m(1)}<span style="margin-left:14px" class="row">不点也能识别 ${m(3)}</span></div>
- <div class="ex">${EX.map((e,i)=>`<button class="card exc" data-act="ex" data-v="${e[0]}"><b>${e[1]}</b><span>${e[2]}</span>${i===2?m(4):''}</button>`).join('')}</div></div>`}
+ <div class="ex">${EX.map((e,i)=>`<button class="card exc" data-act="ex" data-v="${e[0]}"><b>${e[1]}</b><span>${e[2]}</span>${i===EX.length-1?m(4):''}</button>`).join('')}</div></div>`}
 
 function startFlow(kind,text,auto){const p=PRE[kind];clearTimeout(timer);
- S.flow={kind,text:text||p.text,name:p.name,steps:(auto?['已自动打开「产出 · 定时任务」']:[]).concat(p.steps),shown:0,stage:0,freq:p.freq,at:p.at,type:p.type,rcpt:new Set(p.rcpt),tab:'pv',sens:'mid',thr:10,cmp:'d1',metric:'DAU',dir:'down',miss:'none',style:kind==='push'?'bi':'table',tsw:false,comps:[{id:'concl',name:'结论',kind:'模型写',on:true},{id:'tbl',name:'各渠道 DAU',kind:'表格 · 你的 SQL'}],sqlOpen:null,created:false,so:{why:1,dedup:1,twice:1,recover:1},mets:{DAU:1,'付费率':kind==='smart'?1:0,'新增':0},kc:0};
+ S.flow={kind,text:text||p.text,name:p.name,steps:(auto?['已自动打开「产出 · 定时任务」']:[]).concat(p.steps),shown:0,stage:0,freq:p.freq,at:p.at,type:p.type,rcpt:new Set(p.rcpt),tab:kind==='smart'?'set':'pv',sens:'mid',bl:'w4',hol:1,dims:{ch:1,nu:1,dev:0,geo:0},thr:10,cmp:'d1',metric:'DAU',dir:'down',miss:'none',style:kind==='push'?'bi':'table',tsw:false,comps:[{id:'concl',name:'结论',kind:'模型写',on:true},{id:'tbl',name:'各渠道 DAU',kind:'表格 · 你的 SQL'}],sqlOpen:null,created:false,so:{dedup:1,twice:0,recover:1},mets:{DAU:1,'付费率':kind==='smart'?1:0,'付费人数':0,'充值金额':0},kc:0};
  S.page='chat';S.rcOpen=false;S.sc=1;tick()}
 function tick(){clearTimeout(timer);const f=S.flow;if(!f)return;if(f.shown>=f.steps.length){if(f.stage===0){f.stage=1;S.sc=1;render()}return}
  timer=setTimeout(()=>{if(S.flow!==f||S.page!=='chat')return;f.shown++;S.sc=1;render();tick()},430)}
 
 function ub(f){if(f.text===PRE.push.text){return `<div class="ub"><div class="code">${esc(SQL_DAU).replace("'2026-11-16'","<u>'2026-11-16'</u>")}</div><div>每天 9 点发到运营群</div></div>`}return `<div class="ub">${esc(f.text)}</div>`}
-function introT(f){if(f.type==='smart')return '没给阈值，我按近 4 周同一星期几学出 DAU 的正常范围。按昨天的数据<b class="hit">会提醒</b>，右边就是会收到的卡片。';
+function introT(f){if(f.type==='smart')return '取数没问题。你没给阈值，所以用智能监控：右边是 DAU 近 30 天和学出来的正常范围，灵敏度、拆原因的维度、防打扰都能直接调。按昨天的数据'+(f.sens==='low'?'<b class="miss">不会提醒</b>':'<b class="hit">会提醒</b>')+'，会收到的卡片在「飞书卡片预览」。';
  if(f.type==='rule')return ruleHit(f)?`按昨天的数据试算，「${condT(f)}」<b class="hit">会命中</b>，右边就是会收到的告警卡。`:`按昨天的数据试算，「${condT(f)}」<b>不会命中</b>${f.miss==='brief'?'，会照常发一份简报':'，这次不会发'}。`;
  if(f.type==='push')return 'SQL 试跑通过。再选下面 3 项就能建好，其余都按默认；右边是会收到的内容。';
- return '到点用你的问题重新分析一遍，发轻 BI 卡片。'}
+ return '这是一个问题，没有 SQL，所以按问题订阅来建：到点把这个问题重新分析一遍，把结论发给你。我先分析了一次，右边是这次的结果，以后每次都按这个样子发。'}
 const doneLine=(f,s,html)=>`<div class="as"><span class="av">问</span><div class="cd"><span class="ok">✓</span><span>${html}</span>${f.created?'':`<button class="lk" data-act="back" data-v="${s}">修改</button>`}</div></div>`;
 function cTime(f){const verb=(f.type==='push'||f.type==='sub')?'发':'检查';
  if(f.stage>1)return doneLine(f,1,`${verb === '发'?'发送':'检查'}时间：<b>${freqLab(f.freq,f.at)}</b>`);
@@ -431,13 +463,13 @@ function cTime(f){const verb=(f.type==='push'||f.type==='sub')?'发':'检查';
  <div class="row">${['day','workday','mon','month','hour'].map(k=>`<button class="chip ${f.freq===k?'on':''}" data-act="freq" data-v="${k}">${FQ[k]}</button>`).join('')}</div>
  ${f.freq==='hour'?'<div class="mu">每小时整点一次</div>':`<div class="row">${['08:30','09:00','09:30','10:00'].map(t=>`<button class="chip ${f.at===t?'on':''}" data-act="at" data-v="${t}">${t}</button>`).join('')}${f.kind==='push'?'<span class="mu">数据 9:10 前到齐，建议 9:30</span>':''}</div>`}
  <div class="mu">下次：${fmtD(nextRuns(f.freq,f.at,1)[0])}</div><div class="cf"><button class="btn p" data-act="next">确认</button></div></div></div>`}
-function cType(f){const sum={push:`呈现：<b>${f.style==='bi'?'摘要卡 + 移动端页面':'表格卡'}</b>`,rule:`条件：<b>${condT(f)}</b>`,smart:`灵敏度：<b>${SENS[f.sens].l}</b>（近 30 天约提醒 ${SENS[f.sens].dates.length} 次）`,sub:'到点重新分析，发摘要卡'}[f.type];
+function cType(f){const sum={push:`呈现：<b>${f.style==='bi'?'摘要卡 + 移动端页面':'表格卡'}</b>`,rule:`条件：<b>${condT(f)}</b>`,smart:`灵敏度：<b>${SENS[f.sens].l}</b>（近 30 天约提醒 ${hitsOf(f.sens).length} 次）`,sub:'到点重新分析，发摘要卡'}[f.type];
  if(f.stage>2)return doneLine(f,2,`${T[f.type].n} · ${sum}`);
  const Q={push:'怎么呈现？',rule:'什么情况提醒？',smart:'多容易提醒？',sub:'发什么？'}[f.type];
  let body;
  if(f.type==='push')body=`<div class="tps">${[['bi','摘要卡','放结论和关键数字，点开是移动端页面',1],['table','表格卡','卡片里直接放表格，前 6 行 + 合计',0]].map(k=>`<button class="tp ${f.style===k[0]?'on':''}" data-act="style" data-v="${k[0]}">${k[3]?'<span class="rec">推荐</span>':''}<b>${k[1]}</b><span class="mu">${k[2]}</span></button>`).join('')}</div>`;
  else if(f.type==='rule'){const hit=ruleHit(f);body=`<div class="row"><span>${f.metric} ${CMPL[f.cmp]}${f.dir==='down'?'跌超':'涨超'}</span>${[5,10,15,20].map(n=>`<button class="chip ${f.thr===n?'on':''}" data-act="thrset" data-v="${n}">${n}%</button>`).join('')}</div><div class="${hit?'hit':'miss'}">${hit?'● 按昨天的数据会提醒':'○ 按昨天的数据不会提醒'}（实际 ${ruleV(f)}%）</div>`}
- else if(f.type==='smart')body=`<div class="tps t3">${['low','mid','high'].map(k=>`<button class="tp ${f.sens===k?'on':''}" data-act="sens" data-v="${k}">${k==='mid'?'<span class="rec">推荐</span>':''}<b>${SENS[k].l}</b><span class="mu">近 30 天约 ${SENS[k].dates.length} 次</span></button>`).join('')}</div>`;
+ else if(f.type==='smart')body=`<div class="tps t3">${['low','mid','high'].map(k=>`<button class="tp ${f.sens===k?'on':''}" data-act="sens" data-v="${k}">${k==='mid'?'<span class="rec">推荐</span>':''}<b>${SENS[k].l}</b><span class="mu">近 30 天约 ${hitsOf(k).length} 次</span></button>`).join('')}</div>`;
  else body='<div class="mu">到点用你的问题重新分析一遍，发摘要卡，点开看完整分析。</div>';
  const tl=`<div class="tl"><span class="dot" style="background:${T[f.type].c}"></span><span>按<b>${T[f.type].n}</b>来建</span><span class="mu">${f.type===PRE[f.kind].type?'· '+REC[f.type]:''}</span>${m(3)}<button class="lk" data-act="tsw" style="margin-left:auto">${f.tsw?'收起':'换一种'}</button></div>${f.tsw?`<div class="tps">${['push','sub','rule','smart'].map(k=>`<button class="tp ${f.type===k?'on':''}" data-act="type" data-v="${k}"><b><span class="dot" style="background:${T[k].c}"></span>${T[k].n}</b><span class="mu">${T[k].d}</span></button>`).join('')}</div>`:''}`;
  return `<div class="as"><span class="av">问</span><div class="cc"><div class="cch"><b class="stn">2 / 3</b><b>${Q}</b></div>${tl}${body}
@@ -463,10 +495,10 @@ function vRight(f,done){const st=f.created?'<span class="chip okc">运行中</sp
  const head=`<div class="rh"><b>${esc(f.name)}</b><span class="chip" style="margin-left:auto">🔒 项目 波克棋牌 · 随对话带入</span>${m(9)}${st}</div>`;
  if(!done)return `<div class="rp">${head}<div class="load"><span class="spin"></span>正在生成任务预览…</div></div>`;
  const SETL={push:'组件与 SQL',sub:'问题',rule:'规则',smart:'智能监控设置'};
- const tabs=`<div class="tabs">${[['pv','预览'],['set',SETL[f.type]],['plan','运行计划']].map(t=>`<button class="${f.tab===t[0]?'on':''}" data-act="tab" data-v="${t[0]}">${t[1]}</button>`).join('')}${m(4)}${f.created?'<span class="mu" style="margin-left:auto;font-size:12px">改动自动保存</span>':''}</div>`;
+ const tabs=`<div class="tabs">${(f.type==='smart'?[['set',SETL.smart],['pv','飞书卡片预览'],['plan','运行计划']]:[['pv','预览'],['set',SETL[f.type]],['plan','运行计划']]).map(t=>`<button class="${f.tab===t[0]?'on':''}" data-act="tab" data-v="${t[0]}">${t[1]}</button>`).join('')}${m(4)}${f.created?'<span class="mu" style="margin-left:auto;font-size:12px">改动自动保存</span>':''}</div>`;
  let body;
  if(f.tab==='pv'){const o=fOpts(f);const nx=nextRuns(f.freq,f.at,1)[0];
-  const data=f.kind==='push'?'你贴的 SQL · 已试跑 · 日期用 '+BIZ:'从你的话生成 SQL（2 条）· 已试跑';
+  const data=f.kind==='push'?'你贴的 SQL · 已试跑 · 日期用 '+BIZ:f.type==='sub'?'你的问题 · 每次重新分析 · 已先分析一次':'从你的话生成 SQL（2 条）· 已试跑';
   const comp={smart:'当前值 + 正常范围 + 趋势 + 原因',rule:'命中条件 + 降幅前 3 渠道 + 趋势',push:f.style==='table'?'结论（可选）+ 表格':'结论 + 指标卡 + 柱图，点开是移动端页面',sub:'结论 + 指标卡 + 趋势'}[f.type];
   body=`<div class="pvb">${pv(o,chatOf([...f.rcpt]),fmtD(nx),545)}<div class="kvs"><div class="col" style="gap:2px"><span class="mu">下一次${f.type==='push'||f.type==='sub'?'发送':'检查'}</span><b style="font-size:22px">${fmtD(nx)}</b><span class="mu">${freqLab(f.freq,f.at)}${f.type==='rule'||f.type==='smart'?' · 有异常才发':''}</span></div>
   <div class="kv"><span>类型</span><span>${T[f.type].n}</span><span>发给</span><span>${esc(rcLab([...f.rcpt]))}</span><span>数据</span><span>${data}</span><span>执行身份</span><span>吉云飞的数据权限</span><span>卡片组成</span><span>${comp}</span></div>
@@ -475,12 +507,18 @@ function vRight(f,done){const st=f.created?'<span class="chip okc">运行中</sp
  else body=vSet(f);
  return `<div class="rp">${head}${tabs}<div class="rb">${body}</div></div>`}
 function vSet(f){
- if(f.type==='smart'){const s=SENS[f.sens];const sw=(k,l)=>`<button class="swr" data-act="so" data-v="${k}"><span class="sw ${f.so[k]?'':'off'}"></span>${l}</button>`;
-  return `<div class="setb"><div class="fr"><label>盯哪些指标</label><div class="row">${Object.keys(f.mets).map(k=>`<button class="chip ${f.mets[k]?'on':''}" data-act="smet" data-v="${k}">${k}</button>`).join('')}</div></div>
-  <div class="fr"><label>灵敏度 ${m(5)}</label><div class="col"><div class="seg">${['low','mid','high'].map(k=>`<button class="${f.sens===k?'on':''}" data-act="sens" data-v="${k}">${SENS[k].l}</button>`).join('')}</div><span class="mu">${s.sig} · 越高越容易提醒</span></div></div>
-  <div class="fr"><label>近 30 天回放</label><div class="col"><span>按这个灵敏度，近 30 天会提醒 <b class="hit">${s.dates.length} 次</b>：${s.dates.join('、')}</span><span class="mu">用过去 30 天真实数据算出来的，帮你判断会不会太吵</span></div></div>
-  <div class="fr"><label>正常范围</label><div style="max-width:420px">${band(s.b)}<div class="mu">${s.range} · 按近 4 周同一星期几学出，节假日单独基准</div></div></div>
-  <div class="fr"><label>提醒时</label><div class="col">${sw('why','异常时拆原因（渠道 / 新老用户 / 机型）')}${sw('dedup','同一指标 6 小时内只提醒一次')}${sw('twice','连续两次异常才提醒')}${sw('recover','恢复正常时发一条')}</div></div></div>`}
+ if(f.type==='smart'){const s=SENS[f.sens],hs=hitsOf(f.sens);const sw=(a,k,on,l)=>`<button class="swr" data-act="${a}" data-v="${k}"><span class="sw ${on?'':'off'}"></span>${l}</button>`;
+  return `<div class="mon">
+  <div class="msec"><div><b>盯哪些指标</b><div class="mu">从你的话里取出来的，点一下可以加上或去掉</div></div><div class="row">${Object.keys(f.mets).map(k=>`<button class="chip ${f.mets[k]?'on':''}" data-act="smet" data-v="${k}">${f.mets[k]?'✓':'+'} ${k}</button>`).join('')}</div></div>
+  <div class="msec"><div class="mhd"><div><b>DAU · 近 30 天和正常范围</b><div class="mu">正常范围按「${BL[f.bl]}」学出来；落到阴影外就算异常，不用自己定阈值</div></div><div class="row"><span class="mu">灵敏度</span>${m(5)}<div class="seg">${['low','mid','high'].map(k=>`<button class="${f.sens===k?'on':''}" data-act="sens" data-v="${k}">${SENS[k].l}</button>`).join('')}</div></div></div>
+  ${base30(s.k)}
+  <div class="replay ${hs.length?'':'none'}">按近 30 天数据回放：灵敏度「${s.l}」（偏离超过 ${s.sig}）会提醒<b>${hs.length}</b>次</div>
+  ${hs.length?`<div class="hits">${hs.map(x=>`<div><span>${D30[x.i]}</span><span class="${x.z<0?'lo':'hi'}">${x.z<0?'偏低':'偏高'} ${Math.abs(x.z)}σ</span><span>${x.why}</span><span class="mu">${x.dim}</span></div>`).join('')}</div>`:'<div class="mu">这 30 天一次都不会提醒；只有偏离超过 3σ 的大波动才发。</div>'}</div>
+  <div class="mgrid">
+   <div class="msec"><b>正常范围怎么算</b><div class="row">${Object.keys(BL).map(k=>`<button class="chip ${f.bl===k?'on':''}" data-act="bl" data-v="${k}">${BL[k]}</button>`).join('')}</div>${sw('hol','1',f.hol,'节假日、大促自动放宽')}</div>
+   <div class="msec"><b>异常时按什么拆原因</b><div class="row">${Object.keys(DIMK).map(k=>`<button class="chip ${f.dims[k]?'on':''}" data-act="dim" data-v="${k}">${DIMK[k]}</button>`).join('')}</div><span class="mu">告警卡里写出每一项拆出来的结果</span></div>
+   <div class="msec"><b>防打扰</b>${sw('so','dedup',f.so.dedup,'同一指标 6 小时内只提醒一次')}${sw('so','twice',f.so.twice,'连续 2 次异常才提醒')}${sw('so','recover',f.so.recover,'恢复正常时发一条恢复通知')}</div>
+  </div></div>`}
  if(f.type==='rule'){const v=ruleV(f),hit=ruleHit(f);
   return `<div class="setb"><div class="fr"><label>指标</label><div class="seg">${['DAU','付费率'].map(k=>`<button class="${f.metric===k?'on':''}" data-act="metric" data-v="${k}">${k}</button>`).join('')}</div></div>
   <div class="fr"><label>比较</label><div class="seg">${Object.keys(CMPL).map(k=>`<button class="${f.cmp===k?'on':''}" data-act="cmp" data-v="${k}">${CMPL[k]}</button>`).join('')}</div></div>
@@ -493,7 +531,7 @@ function vSet(f){
   <div class="fr"><label>组件 ${m(7)}</label><div class="col">${f.comps.map((c,i)=>`<div class="wd ${f.sqlOpen===c.id?'sel':''}"><div class="wh"><span class="mu">⋮⋮</span><b>${c.name}</b><span class="chip xs">${c.kind}</span><span class="row" style="margin-left:auto;gap:2px">${c.id==='concl'?`<button class="swr" data-act="concl" aria-label="开关"><span class="sw ${c.on?'':'off'}"></span></button>`:`<button class="lk" data-act="sql" data-v="${c.id}" style="margin-right:6px">${f.sqlOpen===c.id?'收起 SQL':'查看 SQL ›'}</button>`}<button class="ic" data-act="mv" data-v="${i}" data-d="-1" aria-label="上移">↑</button><button class="ic" data-act="mv" data-v="${i}" data-d="1" aria-label="下移">↓</button>${c.kpi?`<button class="ic" data-act="rmc" data-v="${i}" aria-label="删除">×</button>`:''}</span></div>
   ${f.sqlOpen===c.id?`<div class="code">${c.kpi?'SELECT COUNT(DISTINCT uid) AS dau\nFROM dws_login_d\nWHERE dt = <u>'+BIZ+'</u>':esc(SQL_DAU).replace("'2026-11-16'",'<u>'+BIZ+'</u>')}</div><div class="row"><span class="chip">${BIZ} = 昨天</span><button class="chip" data-act="sqlrun">试跑</button><span class="mu">只有创建人能看、能改；接收人只看到卡片</span></div>`:''}</div>`).join('')}<button class="wd add" data-act="addc">+ 加组件（指标卡）</button></div></div>
   <div class="fr"><label>SQL 报错时</label><div class="mu" style="line-height:1.6">先按任务名重新分析一次，卡片标“本次为重新分析结果”；列表页标「需要处理」，提醒创建人修 SQL。</div></div></div>`}
- return `<div class="setb"><div class="fr"><label>问题</label><div>${esc(f.text)}</div></div><div class="fr"><label>卡片样式</label><div>轻 BI（固定）</div></div></div>`}
+ return `<div class="setb"><div class="fr"><label>问题</label><div class="col"><div>${esc(f.text)}</div><span class="mu">话里的时间和接收人已经取出来放进任务设置，到点只分析问题本身</span></div></div><div class="fr"><label>每次怎么做</label><div class="mu" style="line-height:1.6">到点把这个问题重新分析一遍，和在问数里提问一样；问题里的「昨天」按执行当天换算。</div></div><div class="fr"><label>卡片样式</label><div>摘要卡，点开是移动端页面（固定）</div></div><div class="fr"><label>提问历史</label><div class="mu">到点自动分析的这一次不计入首页的提问历史</div></div></div>`}
 
 /* tasks */
 function statOk(t,s){return s==='on'?t.on:s==='sent'?(t.today&&['ok','hit','alert'].includes(t.last.k)):s==='alert'?(t.today&&['hit','alert'].includes(t.last.k)):t.needFix}
@@ -579,7 +617,7 @@ function render(){syncFlow();const ae=document.activeElement,fid=ae&&ae.id;let s
 function fit(){const w=document.getElementById('sw').clientWidth;document.getElementById('screen').style.zoom=Math.min(1,w/1180)}
 window.addEventListener('resize',fit);
 
-function classify(t){if(/select\s/i.test(t))return 'push';if(/(跌|涨|降|升)(超|过|破)|%|阈值|低于|高于/.test(t))return 'rule';return 'smart'}
+function classify(t){if(/select\s/i.test(t))return 'push';if(/(跌|涨|降|升)(超|过|破)|%|阈值|低于|高于/.test(t))return 'rule';if(/盯|监控|异常|提醒|告警/.test(t))return 'smart';return 'sub'}
 function send(){const t=S.text.trim();if(!t)return;let k=S.exk&&S.text===PRE[S.exk].text?S.exk:classify(t);
  if(!S.tag&&!/(每天|每日|每周|每月|每小时|点|定时|提醒|盯|监控|异常|发到)/.test(t)){toast('原型只演示定时任务：试试加上“每天 9 点发给我”');return}
  startFlow(k,t,!S.tag)}
@@ -618,7 +656,7 @@ document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');
  case 'back':f.stage=+v;S.sc=1;break;
  case 'freq':f.freq=v;break;
  case 'at':f.at=v;break;
- case 'type':f.type=v;f.tsw=false;break;
+ case 'type':f.type=v;f.tsw=false;if(v==='smart')f.tab='set';break;
  case 'tsw':f.tsw=!f.tsw;break;
  case 'thrset':f.thr=+v;break;
  case 'mp':S.mp=v==='1';break;
@@ -640,6 +678,9 @@ document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');
  case 'sens':f.sens=v;break;
  case 'smet':{if(f.mets[v]&&Object.values(f.mets).filter(Boolean).length===1){toast('至少盯一个指标');break}f.mets[v]=f.mets[v]?0:1;break}
  case 'so':f.so[v]=f.so[v]?0:1;break;
+ case 'bl':f.bl=v;break;
+ case 'hol':f.hol=f.hol?0:1;break;
+ case 'dim':f.dims[v]=f.dims[v]?0:1;break;
  case 'metric':f.metric=v;break;
  case 'cmp':f.cmp=v;break;
  case 'dir':f.dir=v;break;
@@ -700,5 +741,4 @@ document.addEventListener('input',e=>{const id=e.target.id,v=e.target.value;
 document.addEventListener('keydown',e=>{if(e.target.id==='homeText'&&e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();send();render()}});
 init();render();
 </script>
-
 </html>
